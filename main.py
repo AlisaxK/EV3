@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from ev3dev2.motor import LargeMotor, OUTPUT_A, OUTPUT_D, MoveTank
 from ev3dev2.sensor.lego import TouchSensor, ColorSensor
 from time import sleep
@@ -16,8 +17,12 @@ YELLOW = 6
 PURPLE = 7
 THRESHOLD = (BLACK + WHITE) / 2  # Schwellenwert für die Linie
 
+# Räume die angesteuert werden sollen: Wartezimmer, Zimmer 1, Zimmer 2, Zimmer 3
+room ={0, 0, 0, 1}
+
 # Benutzerwahl für das Abbiegeverhalten an der Kreuzung
-choice = input("Soll der Roboter bei GELB (1) oder bei LILA (2) abbiegen? (1/2): ")
+#choice = input("Soll der Roboter bei GELB (1) oder bei LILA (2) abbiegen? (1/2): ")
+choice = "2"
 
 def turn_left_until_black():
     """ Dreht den Roboter nach links, bis er wieder Schwarz erkennt """
@@ -27,39 +32,69 @@ def turn_left_until_black():
     tank_drive.off()
 
 def follow_line():
-    while sensor_touch.is_pressed:
+    #while sensor_touch.is_pressed:
         color = sensor_color.color
         
-        if color <= THRESHOLD:  # Falls schwarz, nach rechts korrigieren
-            tank_drive.on(left_speed=5, right_speed=25)
-        else:  # Falls weiß, nach links korrigieren
-            tank_drive.on(left_speed=25, right_speed=10)
-        
+
         # Kreuzungserkennung
         if color == YELLOW and choice == "1":
             print("GELB erkannt! Abbiegen nach links.")
             tank_drive.off()
-            turn_left_until_black()
+           # turn_left_until_black()
         
+        # vorbei fahren an gelb, wenn zweite kreuzung
         elif color == YELLOW and choice == "2":
-            print("GELB erkannt! Geradeaus für 0.5 Sekunden.")
+            print("vorbeifahren")
+            tank_drive.off()
             tank_drive.on_for_seconds(left_speed=20, right_speed=20, seconds=0.5)
+            return "YELLOW" #raus aus follow_line sonst korrigiert er nach rechts
+           
         
         elif color == PURPLE and choice == "2":
             print("LILA erkannt! Abbiegen nach links.")
             tank_drive.off()
             turn_left_until_black()
+
+        # Korrektur zu aggressiv
+        """
+        if color <= THRESHOLD:  # Falls schwarz, nach rechts korrigieren
+            print("schwarz erkannt, fahre nach rechts")
+            tank_drive.on(left_speed=5, right_speed=25)
+        else:  # Falls weiß, nach links korrigieren
+            tank_drive.on(left_speed=25, right_speed=10)
         
         sleep(0.1)
+        """
+        if color == BLACK:
+            print("schwarz erkannt nur leicht korrigieren rechts")
+            tank_drive.on(left_speed=15, right_speed=20)
+        elif color == WHITE:
+            print("weiss erkannt leicht korrigieren links")
+            tank_drive.on(left_speed=20, right_speed=10)
+        else:
+            print("unklare Farbe (Zwischenbereich), fahre geradeaus")
+            tank_drive.on(left_speed=20, right_speed=20)
     
     # Falls der Touch-Sensor nicht gedrückt wird, stoppt der Roboter
-    tank_drive.off()
+    #tank_drive.off()
 
 try:
     print("Druecke den Touch-Sensor, um den Roboter starten zu lassen.")
+    print("Choice ", choice, "fahre in zweiten raum")
     while True:
         if sensor_touch.is_pressed:
-            follow_line()
+            result = follow_line()
+
+            if result == "GELB":
+                print("→ Geradeaus ueber GELB")
+                break
+
+            elif result == "LILA":
+                print("→ Jetzt links abbiegen bei LILA")
+                turn_left_until_black()
+                print("Abbiegen abgeschlossen. Ziel erreicht.")
+                break  # Oder weitere Aktion nach dem Abbiegen
+
         else:
             tank_drive.off()
         sleep(0.1)
