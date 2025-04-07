@@ -68,7 +68,7 @@ def PickupPatientFromWaitingRoom():
 
 def turn_left_until_black():
     """ Dreht den Roboter nach links, bis er wieder Schwarz erkennt """
-    tank_drive.on(left_speed=-10, right_speed=25)  # Korrigiert das Linksdrehen
+    tank_drive.on(left_speed=-10, right_speed=15)  # Korrigiert das Linksdrehen
     while sensor_color.color != BLACK:
         sleep(0.1)
     tank_drive.off()
@@ -88,7 +88,7 @@ def follow_line():
         elif color == YELLOW and choice == "2":
             print("vorbeifahren")
             tank_drive.off()
-            tank_drive.on_for_seconds(left_speed=20, right_speed=20, seconds=0.5)
+            tank_drive.on_for_seconds(left_speed=20, right_speed=20, seconds=2)
             return "YELLOW" #raus aus follow_line sonst korrigiert er nach rechts
            
         
@@ -99,13 +99,13 @@ def follow_line():
 
         if color == BLACK:
             print("schwarz erkannt nur leicht korrigieren rechts")
-            tank_drive.on(left_speed=15, right_speed=20)
+            tank_drive.on(left_speed=10, right_speed=15)
         elif color == WHITE:
             print("weiss erkannt leicht korrigieren links")
-            tank_drive.on(left_speed=20, right_speed=10)
+            tank_drive.on(left_speed=15, right_speed=10)
         else:
             print("unklare Farbe (Zwischenbereich), fahre geradeaus")
-            tank_drive.on(left_speed=20, right_speed=20)
+            tank_drive.on(left_speed=10, right_speed=10)
     
 
 try:
