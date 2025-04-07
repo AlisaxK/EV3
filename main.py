@@ -11,20 +11,29 @@ sensor_color = ColorSensor(address='in2')
 tank_drive = MoveTank(OUTPUT_A, OUTPUT_D)
 
 # Farbwerte für die Linienverfolgung
-BLACK = 0  # Anpassung je nach Umgebungslicht nötig
+BLACK = 0  
 WHITE = 1
 YELLOW = 6
 PURPLE = 7
+BLUE = 2
+GREEN = 3
+RED = 5
 THRESHOLD = (BLACK + WHITE) / 2  # Schwellenwert für die Linie
 
-# Räume die angesteuert werden sollen: Wartezimmer, Zimmer 1, Zimmer 2, Zimmer 3
-room ={0, 0, 0, 1}
+
+
+# Raumfarben in Reihenfolge: [Raum 0, Raum 1, Raum 2, Raum 3]
+room_colors = [YELLOW, PURPLE, RED, BLUE]
+
+# Results line following
+TARGET_ROOM_REACHED = "TARGET_REACHED"
+CONTINUE_SEARCH = "CONTINUE_SEARCH"
 
 # Benutzerwahl für das Abbiegeverhalten an der Kreuzung
 #choice = input("Soll der Roboter bei GELB (1) oder bei LILA (2) abbiegen? (1/2): ")
 choice = "2"
 
-def driveToRoom(room):
+def driveToRoom(rooms):
     #Roboter fährt in ein Behandlungszimmer oder in das Wartezimmer
     #Prüfung, ob Handy auf sensor liegt, sonst error Code zurückgeben
     print("Warte auf 5 Sekunden langen Druck auf den Touchsensor")
@@ -41,19 +50,24 @@ def driveToRoom(room):
 
     print("Startsignal erkannt. Roboter faehrt los")
 
+    if 1 not in rooms:
+        print("kein Zielraum ausgewaehlt.")
+        return
+    
+    target_room = rooms.index(1)
+    target_color = room_colors[target_room]
+
+    print("Ziel: Raum {} mit Farbe {}".format(target_room, target_color))
+
     while True:
-        result = follow_line()
+        result = follow_line(target_color, room_colors)
 
-        if result == "YELLOW":
-            print("GELB erkannt. Weiterfahren...")
-            continue  # Nur weiterfahren, nichts tun
-
-        elif result == "PURPLE":
-            print("LILA erkannt. Links abbiegen zum Raum.")
+        if result == TARGET_ROOM_REACHED:
+            print("Ziel erreicht")
             turn_left_until_black()
-            print("Zielraum erreicht.")
-            tank_drive.off()
             break
+            
+
 
 
 def driveToBase():
@@ -73,44 +87,49 @@ def turn_left_until_black():
         sleep(0.1)
     tank_drive.off()
 
-def follow_line():
-    #while sensor_touch.is_pressed:
+def follow_line(target_color, all_room_colors):
         color = sensor_color.color
-        
-
+        print(">>> Erkannte Farbe: ", color)
         # Kreuzungserkennung
-        if color == YELLOW and choice == "1":
-            print("GELB erkannt! Abbiegen nach links.")
-            tank_drive.off()
-           # turn_left_until_black()
-        
-        # vorbei fahren an gelb, wenn zweite kreuzung
-        elif color == YELLOW and choice == "2":
-            print("vorbeifahren")
-            tank_drive.off()
-            tank_drive.on_for_seconds(left_speed=20, right_speed=20, seconds=2)
-            return "YELLOW" #raus aus follow_line sonst korrigiert er nach rechts
-           
-        
-        elif color == PURPLE and choice == "2":
-            print("LILA erkannt! Abbiegen nach links.")
+        if color == target_color:
+            print("Ziel-Farbe erkannt. Biege ab")
             tank_drive.off()
             turn_left_until_black()
-
+            sleep(10)
+            return TARGET_ROOM_REACHED
+        
+        # vorbei fahren wenn nicht Zielfarbe
+        elif color in all_room_colors:
+            print("vorbeifahren")
+            tank_drive.on_for_seconds(left_speed=20, right_speed=20, seconds=1)
+            return CONTINUE_SEARCH
+           
+        #Linienverfolgung
         if color == BLACK:
-            print("schwarz erkannt nur leicht korrigieren rechts")
+            #print("schwarz erkannt korrigieren rechts")
             tank_drive.on(left_speed=10, right_speed=15)
         elif color == WHITE:
-            print("weiss erkannt leicht korrigieren links")
+            #print("weiss erkannt korrigieren links")
             tank_drive.on(left_speed=15, right_speed=10)
         else:
-            print("unklare Farbe (Zwischenbereich), fahre geradeaus")
+            #print("unklare Farbe (Zwischenbereich), fahre geradeaus")
             tank_drive.on(left_speed=10, right_speed=10)
     
 
 try:
     print("Druecke den Touch-Sensor fuer 5 sekunden, um den Roboter starten zu lassen.")
-    driveToRoom(room)
+    rooms = [0, 0, 1, 0]
+    driveToRoom(rooms)
+
+    """
+    print("Starte Farberkennungs-Test.")
+    while True:
+        color = sensor_color.color
+        print("Erkannte Farbe: {}", color)
+        sleep(0.5)
+    """
+    
+   
 
 except KeyboardInterrupt:
     print("Test beendet.")
