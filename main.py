@@ -3,6 +3,10 @@ from ev3dev2.motor import LargeMotor, OUTPUT_A, OUTPUT_D, MoveTank
 from ev3dev2.sensor.lego import TouchSensor, ColorSensor
 from ev3dev2.sensor import Sensor
 from time import sleep
+from websocket_client import EV3WebSocketClient
+
+
+
 
 # Initialisiere die Sensoren
 sensor_touch = TouchSensor()
@@ -31,7 +35,8 @@ CONTINUE_SEARCH = "CONTINUE_SEARCH"
 
 def driveToRoom():
     #Roboter fährt in ein Behandlungszimmer oder in das Wartezimmer
-    #Prüfung, ob Handy auf sensor liegt, sonst error Code zurückgeben
+    #Prüfung, ob Handy auf sensor liegt, sonst error Code zurückgeben „no_phone_detected"
+    # Status success wenn erfolgreich
     print("Warte auf 5 Sekunden langen Druck auf den Touchsensor")
     pressed_time = 0
     while pressed_time < 5:
@@ -72,16 +77,18 @@ def driveToRoom():
 
 def driveToBase():
     # Roboter fährt zu Ausgangspunkt zurück
-    # eventuell prüfen, ob Handy auf dem Roboter liegt, sonst error Code
+    # eventuell prüfen, ob Handy auf dem Roboter liegt, sonst error Code „no_phone_detected“
+    # success wenn erfolgreich
     print("Fahre zu Start")
 
 def PickupPatientFromWaitingRoom():
     # Roboter fährt ins Wartezimmer um Patient abzuholen
-    # Prüfen, ob Handy aufgehoben wurde, sonst error Code zurückgeben
+    # Prüfen, ob Handy aufgehoben wurde, sonst error Code zurückgeben  „phone_not_removed“ 
+    # success wenn erfolgreich
     print("Hole Patient im Wartezimmer ab")
 
 def turn_left_90_degrees():
-     """ Dreht den Roboter nach um 90° nach links, bis er wieder Schwarz erkennt """
+     """""" Dreht den Roboter nach um 90° nach links, bis er wieder Schwarz erkennt """"""
     print("Drehe 90 Grad nach links")
     tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=200)
     tank_drive.off()
@@ -121,3 +128,33 @@ try:
 except KeyboardInterrupt:
     print("Test beendet.")
     tank_drive.off()
+
+
+
+### 
+def handle_command(command):
+    # Kommando vom Server empfangen und verarbeiten
+    if command.get("action") == "driveToRoom":
+        rooms = command.get("rooms", [0, 0, 0, 0])
+        driveToRoom(rooms)
+    elif action == "driveToBase":
+        driveToBase()
+
+    elif action == "PickupPatientFromWaitingRoom":
+        PickupPatientFromWaitingRoom()
+
+    else:
+        print(f"Unbekannter Befehl erhalten: {action}")
+
+if __name__ == "__main__":
+    # Starte WebSocket-Client
+    websocket_url = "ws://192.168.2.170:3001"  # Ersetze <SERVER_IP> mit deiner Server-IP
+    ws_client = EV3WebSocketClient(websocket_url, handle_command) # handle_command als Callback
+    ws_client.start()
+
+    try:
+        while True:
+            sleep(1)  # Hauptschleife aktiv halten
+    except KeyboardInterrupt:
+        tank_drive.off()
+        print("Roboter beendet.")
