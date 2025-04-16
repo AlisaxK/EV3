@@ -25,7 +25,8 @@ class EV3WebSocketClient:
 
     def on_open(self, ws):
         print("WebSocket-Verbindung geöffnet")
-        ws.send(json.dumps({"client": "EV3-Roboter"}))
+        ws.send("sm") # hier noch den key vom roboter einfügen
+        #ws.send(json.dumps({"client": "EV3-Roboter"}))
 
     def start(self):
         self.ws = WebSocketApp(self.url,
