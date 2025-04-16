@@ -33,7 +33,7 @@ room_colors = [YELLOW, PURPLE, RED, BLUE]
 TARGET_ROOM_REACHED = "TARGET_REACHED"
 CONTINUE_SEARCH = "CONTINUE_SEARCH"
 
-def driveToRoom(): #ws=None übergeben, um Status zu senden
+def driveToRoom(rooms, ws=None): #ws=None übergeben, um Status zu senden
     #Roboter fährt in ein Behandlungszimmer oder in das Wartezimmer
     #Prüfung, ob Handy auf sensor liegt, sonst error Code zurückgeben „no_phone_detected"
     # Status success wenn erfolgreich
@@ -153,7 +153,8 @@ class EV3CommandHandler:
 
         try:
             if action == "driveToRoom":
-                driveToRoom() # self.ws übergeben
+                rooms = command.get("rooms", [0,0,0,0])
+                driveToRoom(rooms, ws=None) # self.ws übergeben
                 self.ws.send(json.dumps({
                 "type": "info",
                 "message": "driveToRoom"
