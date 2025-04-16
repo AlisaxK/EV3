@@ -21,7 +21,7 @@ class EV3WebSocketClient:
         print("WebSocket-Fehler:", error)
 
     def on_close(self, ws, close_status_code, close_msg):
-        print("WebSocket-Verbindung geschlossen")
+        print("WebSocket-Verbindung mit Roboter geschlossen")
 
     def on_open(self, ws):
         print("WebSocket-Verbindung geöffnet")

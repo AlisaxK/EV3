@@ -33,7 +33,7 @@ room_colors = [YELLOW, PURPLE, RED, BLUE]
 TARGET_ROOM_REACHED = "TARGET_REACHED"
 CONTINUE_SEARCH = "CONTINUE_SEARCH"
 
-def driveToRoom():
+def driveToRoom(): #ws=None übergeben, um Status zu senden
     #Roboter fährt in ein Behandlungszimmer oder in das Wartezimmer
     #Prüfung, ob Handy auf sensor liegt, sonst error Code zurückgeben „no_phone_detected"
     # Status success wenn erfolgreich
@@ -132,24 +132,57 @@ except KeyboardInterrupt:
 
 
 ### 
-def handle_command(command):
-    # Kommando vom Server empfangen und verarbeiten
-    if command.get("action") == "driveToRoom":
-        rooms = command.get("rooms", [0, 0, 0, 0])
-        driveToRoom(rooms)
-    elif action == "driveToBase":
-        driveToBase()
 
-    elif action == "PickupPatientFromWaitingRoom":
-        PickupPatientFromWaitingRoom()
+class EV3CommandHandler:
+    def __init__(self, ws):
+        self.ws = ws
+        self.busy = False
 
-    else:
-        print(f"Unbekannter Befehl erhalten: {action}")
+    def handle_command(self, command):
+        if self.busy:
+            print("Roboter ist beschäftigt. Ignoriere Befehl:", command)
+            self.ws.send(json.dumps({
+                "type": "status",
+                "message": "busy",
+                "rejected_command": command.get("action")
+            }))
+            return
+
+        self.busy = True
+        action = command.get("action")
+
+        try:
+            if action == "driveToRoom":
+                driveToRoom() # self.ws übergeben
+                self.ws.send(json.dumps({
+                "type": "info",
+                "message": "driveToRoom"
+                }))
+
+            elif action == "driveToBase":
+                driveToBase()
+                self.ws.send(json.dumps({"type": "info", "message": "driveToBase"}))
+
+            elif action == "PickupPatientFromWaitingRoom":
+                PickupPatientFromWaitingRoom()
+                self.ws.send(json.dumps({"type": "info", "message": "PickupPatientFromWaitingRoom"}))
+
+            else:
+                print("Unbekannter Befehl:", action)
+                self.ws.send(json.dumps({"type": "error", "message": "unknown_command"}))
+
+        except Exception as e:
+            print("Fehler bei Ausführung:", e)
+            self.ws.send(json.dumps({"type": "error", "message": str(e)}))
+
+        finally:
+            self.busy = False
 
 if __name__ == "__main__":
     # Starte WebSocket-Client
-    websocket_url = "ws://192.168.2.170:3001"  # Ersetze <SERVER_IP> mit deiner Server-IP
-    ws_client = EV3WebSocketClient(websocket_url, handle_command) # handle_command als Callback
+    websocket_url = "ws://<SERVER_IP>:3001"  # Ersetze <SERVER_IP> mit deiner Server-IP
+    command_handler= EV3CommandHandler(None)
+    ws_client = EV3WebSocketClient(websocket_url, command_handler.handle_command) # handle_command als Callback
     ws_client.start()
 
     try:
