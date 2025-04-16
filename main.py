@@ -2,6 +2,9 @@
 from ev3dev2.motor import LargeMotor, OUTPUT_A, OUTPUT_D, MoveTank
 from ev3dev2.sensor.lego import TouchSensor, ColorSensor
 from time import sleep
+from websocket_client import EV3WebSocketClient
+
+
 
 # Initialisiere die Sensoren
 sensor_touch = TouchSensor()
@@ -121,7 +124,8 @@ try:
     rooms = [0, 0, 1, 0]
     driveToRoom(rooms)
 
-    """
+
+      """
     print("Starte Farberkennungs-Test.")
     while True:
         color = sensor_color.color
@@ -129,8 +133,38 @@ try:
         sleep(0.5)
     """
     
+    
    
-
 except KeyboardInterrupt:
     print("Test beendet.")
     tank_drive.off()
+
+
+
+### 
+def handle_command(command):
+    # Kommando vom Server empfangen und verarbeiten
+    if command.get("action") == "driveToRoom":
+        rooms = command.get("rooms", [0, 0, 0, 0])
+        driveToRoom(rooms)
+    elif action == "driveToBase":
+        driveToBase()
+
+    elif action == "PickupPatientFromWaitingRoom":
+        PickupPatientFromWaitingRoom()
+
+    else:
+        print(f"Unbekannter Befehl erhalten: {action}")
+
+if __name__ == "__main__":
+    # Starte WebSocket-Client
+    websocket_url = "ws://192.168.2.170:3001"  # Ersetze <SERVER_IP> mit deiner Server-IP
+    ws_client = EV3WebSocketClient(websocket_url, handle_command) # handle_command als Callback
+    ws_client.start()
+
+    try:
+        while True:
+            sleep(1)  # Hauptschleife aktiv halten
+    except KeyboardInterrupt:
+        tank_drive.off()
+        print("Roboter beendet.")
