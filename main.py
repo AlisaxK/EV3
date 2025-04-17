@@ -2,6 +2,10 @@ from ev3dev2.motor import LargeMotor, OUTPUT_A, OUTPUT_D, MoveTank
 from ev3dev2.sensor.lego import TouchSensor, ColorSensor, InfraredSensor
 from ev3dev2.sensor import Sensor
 from time import sleep
+from websocket_client import EV3WebSocketClient
+
+
+
 
 # Initialisiere die Sensoren
 sensor_touch = TouchSensor()
@@ -26,19 +30,19 @@ THRESHOLD = (BLACK + WHITE) / 2  # Schwellenwert fuer die Linie
 TARGET_ROOM_REACHED = "TARGET_ROOM_REACHED"
 CONTINUE_SEARCH = "CONTINUE_SEARCH"
 
-def driveToRoom():
-    # Roboter fährt in ein Behandlungszimmer oder in das Wartezimmer
-    # Prüfung, ob Handy auf Sensor liegt, sonst Error-Code zurückgeben
-    # Warte auf 5 Sekunden langen Druck auf den Touchsensor
-    # print("Warte auf 5 Sekunden langen Druck auf den Touchsensor")
-    # pressed_time = 0
-    # while pressed_time < 5:
-    #     if sensor_touch.is_pressed:
-    #         sleep(1)
-    #         pressed_time += 1
-    #         print("{} Sekunde(n) gedrueckt".format(pressed_time))
-    #     else:
-    #         pressed_time = 0
+def driveToRoom(rooms, ws=None): #ws=None übergeben, um Status zu senden
+    #Roboter fährt in ein Behandlungszimmer oder in das Wartezimmer
+    #Prüfung, ob Handy auf sensor liegt, sonst error Code zurückgeben „no_phone_detected"
+    # Status success wenn erfolgreich
+    print("Warte auf 5 Sekunden langen Druck auf den Touchsensor")
+    pressed_time = 0
+    while pressed_time < 5:
+        if sensor_touch.is_pressed:
+            sleep(1)
+            pressed_time += 1
+            print("{} Sekunde(n) gedrueckt".format(pressed_time))
+        else:
+            pressed_time = 0 # Timer zurücksetzen, wenn losgelassen
 
     print("Startsignal erkannt. Roboter faehrt los")
 
@@ -71,16 +75,18 @@ def driveToRoom():
 
 def driveToBase():
     # Roboter fährt zu Ausgangspunkt zurück
-    # eventuell prüfen, ob Handy auf dem Roboter liegt, sonst Error-Code
+    # eventuell prüfen, ob Handy auf dem Roboter liegt, sonst error Code „no_phone_detected“
+    # success wenn erfolgreich
     print("Fahre zu Start")
 
 def PickupPatientFromWaitingRoom():
     # Roboter fährt ins Wartezimmer um Patient abzuholen
-    # Prüfen, ob Handy aufgehoben wurde, sonst Error-Code zurückgeben
+    # Prüfen, ob Handy aufgehoben wurde, sonst error Code zurückgeben  „phone_not_removed“ 
+    # success wenn erfolgreich
     print("Hole Patient im Wartezimmer ab")
 
 def turn_left_90_degrees():
-    # Dreht den Roboter um 90° nach links
+     """""" Dreht den Roboter nach um 90° nach links, bis er wieder Schwarz erkennt """"""
     print("Drehe 90 Grad nach links")
     tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=200)
     tank_drive.off()
@@ -134,3 +140,67 @@ try:
 except KeyboardInterrupt:
     print("Test beendet.")
     tank_drive.off()
+
+
+
+### 
+
+class EV3CommandHandler:
+    def __init__(self, ws):
+        self.ws = ws
+        self.busy = False
+
+    def handle_command(self, command):
+        if self.busy:
+            print("Roboter ist beschäftigt. Ignoriere Befehl:", command)
+            self.ws.send(json.dumps({
+                "type": "status",
+                "message": "busy",
+                "rejected_command": command.get("action")
+            }))
+            return
+
+        self.busy = True
+        action = command.get("action")
+
+        try:
+            if action == "driveToRoom":
+                rooms = command.get("rooms", [0,0,0,0])
+                driveToRoom(rooms, ws=None) # self.ws übergeben
+                self.ws.send(json.dumps({
+                "type": "info",
+                "message": "driveToRoom"
+                }))
+
+            elif action == "driveToBase":
+                driveToBase()
+                self.ws.send(json.dumps({"type": "info", "message": "driveToBase"}))
+
+            elif action == "PickupPatientFromWaitingRoom":
+                PickupPatientFromWaitingRoom()
+                self.ws.send(json.dumps({"type": "info", "message": "PickupPatientFromWaitingRoom"}))
+
+            else:
+                print("Unbekannter Befehl:", action)
+                self.ws.send(json.dumps({"type": "error", "message": "unknown_command"}))
+
+        except Exception as e:
+            print("Fehler bei Ausführung:", e)
+            self.ws.send(json.dumps({"type": "error", "message": str(e)}))
+
+        finally:
+            self.busy = False
+
+if __name__ == "__main__":
+    # Starte WebSocket-Client
+    websocket_url = "ws://<SERVER_IP>:3001"  # Ersetze <SERVER_IP> mit deiner Server-IP
+    command_handler= EV3CommandHandler(None)
+    ws_client = EV3WebSocketClient(websocket_url, command_handler.handle_command) # handle_command als Callback
+    ws_client.start()
+
+    try:
+        while True:
+            sleep(1)  # Hauptschleife aktiv halten
+    except KeyboardInterrupt:
+        tank_drive.off()
+        print("Roboter beendet.")
