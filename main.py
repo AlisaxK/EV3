@@ -4,9 +4,6 @@ from ev3dev2.sensor import Sensor
 from time import sleep
 #from websocket_client import EV3WebSocketClient
 
-
-
-
 # Initialisiere die Sensoren
 sensor_touch = TouchSensor()
 sensor_floor = ColorSensor(address='in2')     # EV3 Color Sensor auf Boden
@@ -29,7 +26,7 @@ THRESHOLD = (BLACK + WHITE) / 2  # Schwellenwert fuer die Linie
 # Results line following
 TARGET_ROOM_REACHED = "TARGET_ROOM_REACHED"
 CONTINUE_SEARCH = "CONTINUE_SEARCH"
-last_color_blue = False
+last_color_green = False
 
 def driveToRoom(rooms, ws=None): #ws=None übergeben, um Status zu senden
     #Roboter fährt in ein Behandlungszimmer oder in das Wartezimmer
@@ -58,19 +55,46 @@ def driveToRoom(rooms, ws=None): #ws=None übergeben, um Status zu senden
             print("Ungueltige Eingabe. Bitte 1 bis 4 waehlen.")
 
     print("Ziel: Zimmernummer {} - Roboter soll dort abbiegen.".format(target_index))
-    blue_count = 0
+    green_count = 0
 
     while True:
-        result, blue_count = follow_line_with_blue_count(target_index, blue_count)
+        result, green_count = follow_line_with_green_count(target_index, green_count)
 
         if result == TARGET_ROOM_REACHED:
             print("Ziel erreicht - nach links abbiegen und Linie suchen")
             turn_left_90_degrees()
+
+            # Folge der Linie weiter bis zur blauen Platte (Raumende)
             while True:
-                result, blue_count = follow_line_with_blue_count(target_index, blue_count)
-                if result == TARGET_ROOM_REACHED:
-                    print("Zweites Ziel erreicht oder erneut gleiche Farbe erkannt.")
-                    break
+                floor_color = sensor_floor.color
+                right_color_id = sensor_right.value(0)
+                distance = sensor_ir.proximity
+
+                print(">>> Nach dem Abbiegen - Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
+
+                if distance < 30:
+                    print("Hindernis erkannt - Roboter stoppt.")
+                    tank_drive.off()
+                    while sensor_ir.proximity < 30:
+                        sleep(0.1)
+                    print("Hindernis entfernt - Roboter faehrt weiter.")
+
+                elif right_color_id == BLUE:
+                    print("Blaue Platte erkannt - 180 Grad drehen und stoppen")
+                    tank_drive.off()
+                    tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=400)
+                    tank_drive.off()
+                    return
+
+                else:
+                    if floor_color == BLACK:
+                        tank_drive.on(left_speed=10, right_speed=15)
+                    elif floor_color == WHITE:
+                        tank_drive.on(left_speed=15, right_speed=10)
+                    else:
+                        tank_drive.on(left_speed=10, right_speed=10)
+
+                sleep(0.1)
             break
 
 def driveToBase():
@@ -91,13 +115,13 @@ def turn_left_90_degrees():
     tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=200)
     tank_drive.off()
 
-def follow_line_with_blue_count(target_count, blue_seen):
-    global last_color_blue
+def follow_line_with_green_count(target_count, green_seen):
+    global last_color_green
     floor_color = sensor_floor.color
     right_color_id = sensor_right.value(0)
     distance = sensor_ir.proximity
 
-    print(">>> Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}, Blau gezaehlt: {}".format(floor_color, right_color_id, distance, blue_seen))
+    print(">>> Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}, Gruen gezaehlt: {}".format(floor_color, right_color_id, distance, green_seen))
 
     # Wenn Hindernis erkannt wird, stoppe
     if distance < 30:
@@ -106,23 +130,23 @@ def follow_line_with_blue_count(target_count, blue_seen):
         while sensor_ir.proximity < 30:
             sleep(0.1)
         print("Hindernis entfernt - Roboter faehrt weiter.")
-        return CONTINUE_SEARCH, blue_seen
+        return CONTINUE_SEARCH, green_seen
 
-    # Nur bei Übergang von Nicht Blaue zu Blau zählen
-    if right_color_id == BLUE:
-        if not last_color_blue:
-            blue_seen += 1
-            print("Uebergang zu Blau erkannt. Blaue Platte Nummer {} gezaehlt.".format(blue_seen))
-        last_color_blue = True
-        if blue_seen == target_count:
+    # Nur bei Übergang von Nicht Gruen zu Gruen zählen
+    if right_color_id == GREEN:
+        if not last_color_green:
+            green_seen += 1
+            print("Uebergang zu Gruen erkannt. Gruen Platte Nummer {} gezaehlt.".format(green_seen))
+        last_color_green = True
+        if green_seen == target_count:
             print("Ziel erreicht. Abbiegen.")
             tank_drive.off()
-            return TARGET_ROOM_REACHED, blue_seen
+            return TARGET_ROOM_REACHED, green_seen
         else:
             tank_drive.on_for_seconds(left_speed=15, right_speed=15, seconds=1)
-            return CONTINUE_SEARCH, blue_seen
+            return CONTINUE_SEARCH, green_seen
     else:
-        last_color_blue = False
+        last_color_green = False
 
     # Linienverfolgung basierend auf Bodenfarbe
     if floor_color == BLACK:
@@ -131,7 +155,7 @@ def follow_line_with_blue_count(target_count, blue_seen):
         tank_drive.on(left_speed=15, right_speed=10)
     else:
         tank_drive.on(left_speed=10, right_speed=10)
-    return CONTINUE_SEARCH, blue_seen
+    return CONTINUE_SEARCH, green_seen
 
 def main():
     # Startpunkt des Programms
@@ -145,8 +169,6 @@ try:
 except KeyboardInterrupt:
     print("Test beendet.")
     tank_drive.off()
-
-
 
 ### 
 
