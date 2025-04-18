@@ -2,7 +2,7 @@ from ev3dev2.motor import LargeMotor, OUTPUT_A, OUTPUT_D, MoveTank
 from ev3dev2.sensor.lego import TouchSensor, ColorSensor, InfraredSensor
 from ev3dev2.sensor import Sensor
 from time import sleep
-from websocket_client import EV3WebSocketClient
+#from websocket_client import EV3WebSocketClient
 
 
 
@@ -21,14 +21,15 @@ BLACK = 0
 WHITE = 1
 YELLOW = 6
 PURPLE = 7
-BLUE = 2
-GREEN = 3
+BLUE = 3
+GREEN = 4
 RED = 5
 THRESHOLD = (BLACK + WHITE) / 2  # Schwellenwert fuer die Linie
 
 # Results line following
 TARGET_ROOM_REACHED = "TARGET_ROOM_REACHED"
 CONTINUE_SEARCH = "CONTINUE_SEARCH"
+last_color_blue = False
 
 def driveToRoom(rooms, ws=None): #ws=None übergeben, um Status zu senden
     #Roboter fährt in ein Behandlungszimmer oder in das Wartezimmer
@@ -46,29 +47,28 @@ def driveToRoom(rooms, ws=None): #ws=None übergeben, um Status zu senden
 
     print("Startsignal erkannt. Roboter faehrt los")
 
-    # Ziel-Farbwahl durch Benutzer mit Wiederholung bei ungueltiger Eingabe
-    target_color = None
-    while target_color is None:
-        print("Waehle Ziel-Farbe: (1) Blau, (2) Gelb")
-        auswahl = input("Eingabe: ")
-        if auswahl == "1":
-            target_color = BLUE
-        elif auswahl == "2":
-            target_color = YELLOW
+    # Ziel-Zimmerwahl durch Benutzer mit Wiederholung bei ungueltiger Eingabe
+    target_index = None
+    while target_index is None:
+        print("Waehle Ziel-Zimmer: (1) Zimmer 1, (2) Zimmer 2, (3) Zimmer 3, (4) Zimmer 4")
+        eingabe = input("Eingabe: ")
+        if eingabe in ["1", "2", "3", "4"]:
+            target_index = int(eingabe)
         else:
-            print("Ungueltige Auswahl. Bitte erneut eingeben.")
+            print("Ungueltige Eingabe. Bitte 1 bis 4 waehlen.")
 
-    print("Ziel: Farbe {} - Roboter soll dort abbiegen.".format(target_color))
+    print("Ziel: Zimmernummer {} - Roboter soll dort abbiegen.".format(target_index))
+    blue_count = 0
 
     while True:
-        result = follow_line(target_color, [YELLOW, PURPLE, RED, BLUE, GREEN])
+        result, blue_count = follow_line_with_blue_count(target_index, blue_count)
 
         if result == TARGET_ROOM_REACHED:
             print("Ziel erreicht - nach links abbiegen und Linie suchen")
             turn_left_90_degrees()
             while True:
-                follow_result = follow_line(target_color, [YELLOW, PURPLE, RED, BLUE, GREEN])
-                if follow_result == TARGET_ROOM_REACHED:
+                result, blue_count = follow_line_with_blue_count(target_index, blue_count)
+                if result == TARGET_ROOM_REACHED:
                     print("Zweites Ziel erreicht oder erneut gleiche Farbe erkannt.")
                     break
             break
@@ -86,17 +86,18 @@ def PickupPatientFromWaitingRoom():
     print("Hole Patient im Wartezimmer ab")
 
 def turn_left_90_degrees():
-     """""" Dreht den Roboter nach um 90° nach links, bis er wieder Schwarz erkennt """"""
+    '''Dreht den Roboter nach um 90° nach links, bis er wieder Schwarz erkennt'''
     print("Drehe 90 Grad nach links")
     tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=200)
     tank_drive.off()
 
-def follow_line(target_color, all_room_colors):
+def follow_line_with_blue_count(target_count, blue_seen):
+    global last_color_blue
     floor_color = sensor_floor.color
     right_color_id = sensor_right.value(0)
     distance = sensor_ir.proximity
 
-    print(">>> Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
+    print(">>> Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}, Blau gezaehlt: {}".format(floor_color, right_color_id, distance, blue_seen))
 
     # Wenn Hindernis erkannt wird, stoppe
     if distance < 30:
@@ -105,19 +106,23 @@ def follow_line(target_color, all_room_colors):
         while sensor_ir.proximity < 30:
             sleep(0.1)
         print("Hindernis entfernt - Roboter faehrt weiter.")
-        return CONTINUE_SEARCH
+        return CONTINUE_SEARCH, blue_seen
 
-    # Prüfe ob Ziel-Farbblock erkannt wurde
-    if right_color_id == target_color:
-        print("Ziel-Farbblock erkannt (rechts). Biege ab.")
-        tank_drive.off()
-        return TARGET_ROOM_REACHED
-
-    # Falsche Raumfarbe erkannt – weiterfahren
-    elif right_color_id in all_room_colors:
-        print("Falsche Raumfarbe erkannt (rechts), weiterfahren")
-        tank_drive.on_for_seconds(left_speed=15, right_speed=15, seconds=1)
-        return CONTINUE_SEARCH
+    # Nur bei Übergang von Nicht Blaue zu Blau zählen
+    if right_color_id == BLUE:
+        if not last_color_blue:
+            blue_seen += 1
+            print("Uebergang zu Blau erkannt. Blaue Platte Nummer {} gezaehlt.".format(blue_seen))
+        last_color_blue = True
+        if blue_seen == target_count:
+            print("Ziel erreicht. Abbiegen.")
+            tank_drive.off()
+            return TARGET_ROOM_REACHED, blue_seen
+        else:
+            tank_drive.on_for_seconds(left_speed=15, right_speed=15, seconds=1)
+            return CONTINUE_SEARCH, blue_seen
+    else:
+        last_color_blue = False
 
     # Linienverfolgung basierend auf Bodenfarbe
     if floor_color == BLACK:
@@ -126,12 +131,12 @@ def follow_line(target_color, all_room_colors):
         tank_drive.on(left_speed=15, right_speed=10)
     else:
         tank_drive.on(left_speed=10, right_speed=10)
-    return CONTINUE_SEARCH
+    return CONTINUE_SEARCH, blue_seen
 
 def main():
     # Startpunkt des Programms
     print("Druecke den Touch-Sensor fuer 5 Sekunden, um den Roboter starten zu lassen.")
-    driveToRoom()
+    driveToRoom([0, 0, 0, 0])
 
 try:
     if __name__ == '__main__':
