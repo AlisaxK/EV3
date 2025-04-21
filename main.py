@@ -134,7 +134,7 @@ def driveToRoom(rooms, ws=None):
                 if right_color_id == BLUE:
                     print("Zweite blaue Platte (rechts) erkannt - Roboter dreht 180 Grad und stoppt")
                     tank_drive.off()
-                    tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=400)
+                    tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=420)
                     tank_drive.off()
                     return
 
