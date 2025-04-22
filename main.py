@@ -28,6 +28,13 @@ TARGET_ROOM_REACHED = "TARGET_ROOM_REACHED"
 CONTINUE_SEARCH = "CONTINUE_SEARCH"
 last_color_green = False
 
+# current Position
+POSITION_START = 0
+POSITION_WAITING = 1
+POSITION_ROOM1 = 2
+POSITION_ROOM2 = 3
+POSITION_ROOM3 = 4
+positionRobot = POSITION_START
 
 def wait_for_phone_removed():
     print("Warte darauf, dass das Handy entfernt wird...")
@@ -45,6 +52,16 @@ def driveToRoom(rooms, ws=None):
     wait_for_phone_removed()
 
     target_index = None
+    for i, val in enumerate(rooms):
+        if val == 1:
+            target_index = i + 1  # Zimmernummern starten bei 1
+            break
+
+    if target_index is None:
+        print("Kein Zielraum angegeben – Abbruch.")
+        return
+
+    """
     while target_index is None:
         print("Waehle Ziel-Zimmer: (1) Zimmer 1, (2) Zimmer 2, (3) Zimmer 3, (4) Zimmer 4")
         eingabe = input("Eingabe: ")
@@ -52,6 +69,7 @@ def driveToRoom(rooms, ws=None):
             target_index = int(eingabe)
         else:
             print("Ungueltige Eingabe. Bitte 1 bis 4 waehlen.")
+    """
 
     print("Ziel: Zimmernummer {} - Roboter soll dort abbiegen.".format(target_index))
     green_count = 0
@@ -94,6 +112,19 @@ def driveToRoom(rooms, ws=None):
                         tank_drive.on(left_speed=20, right_speed=20)
                 sleep(0.1)
 
+    global positionRobot    
+    if target_index == 0:
+        positionRobot = POSITION_WAITING
+    elif target_index == 1:
+        positionRobot = POSITION_ROOM1
+    elif target_index == 2:
+        positionRobot = POSITION_ROOM2
+    elif target_index == 3:
+        positionRobot = POSITION_ROOM3
+    else:
+        print("Unbekannter Zielraum Position nicht gesetzt.")
+
+    print("Position Roboter gesetzt auf:", positionRobot)
     return
 
 def driveToBase():
@@ -156,7 +187,6 @@ def driveToBase():
             tank_drive.off()
             tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=420)
             tank_drive.off()
-            print("Rückfahrt vollständig abgeschlossen.")
             return
 
         elif floor_color == BLACK:
@@ -168,12 +198,20 @@ def driveToBase():
 
         sleep(0.1)
 
+        global positionRobot
+        positionRobot = POSITION_START
+        print("Position zurückgesetzt auf: ", positionRobot)
 
-def PickupPatientFromWaitingRoom():
+
+def pickupPatientFromWaitingRoom():
     # Roboter fährt ins Wartezimmer um Patient abzuholen
     # Prüfen, ob Handy aufgehoben wurde, sonst error Code zurückgeben  „phone_not_removed“ 
     # success wenn erfolgreich
     print("Hole Patient im Wartezimmer ab")
+    wait_for_phone_removed()
+    waitingRoom = [1, 0, 0, 0]
+    driveToRoom(waitingRoom)
+
 
 def turn_left_90_degrees():
     #Dreht den Roboter nach um 90° nach links, bis er wieder Schwarz erkennt
@@ -225,8 +263,9 @@ def follow_line_with_green_count(target_count, green_seen):
 
 def main():
     # Startpunkt des Programms
-    driveToRoom([0, 0, 0, 0])
-    driveToBase()
+    #driveToRoom([1, 0, 0, 0])
+    #driveToBase()
+    pickupPatientFromWaitingRoom()
 
 try:
     if __name__ == '__main__':
