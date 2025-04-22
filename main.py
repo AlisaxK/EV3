@@ -76,6 +76,7 @@ def driveToRoom(rooms, ws=None):
     from_waiting_room = positionRobot == POSITION_WAITING
     if from_waiting_room:
         turn_left_to_rooms(target_index)
+        return
 
     green_count = 0
 
@@ -170,15 +171,34 @@ def turn_left_to_rooms(target_index):
 
         sleep(0.1)
 
-    green_count = 0
     while True:
-        result, green_count = follow_line_with_green_count(target_index, green_count)
+        floor_color = sensor_floor.color
+        right_color_id = sensor_right.value(0)
+        distance = sensor_ir.proximity
 
-        if result == TARGET_ROOM_REACHED:
-            print("Ziel erreicht  links abbiegen in den Raum")
+        if distance < 30:
+            print("Hindernis erkannt  warte...")
             tank_drive.off()
-            turn_left_90_degrees()
+            while sensor_ir.proximity < 30:
+                sleep(0.1)
+            print("Hindernis entfernt weiterfahren.")
+
+        elif right_color_id == BLUE:
+            print("Ziel im Raum erreicht drehen und auf Handy warten")
+            tank_drive.off()
+            tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=400)
+            tank_drive.off()
+            wait_for_phone_placed()
             return
+
+        else:
+            if floor_color == BLACK:
+                tank_drive.on(left_speed=20, right_speed=25)
+            elif floor_color == WHITE:
+                tank_drive.on(left_speed=25, right_speed=20)
+            else:
+                tank_drive.on(left_speed=20, right_speed=20)
+
         sleep(0.1)
 
 
