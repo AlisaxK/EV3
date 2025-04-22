@@ -29,11 +29,11 @@ CONTINUE_SEARCH = "CONTINUE_SEARCH"
 last_color_green = False
 
 # current Position
-POSITION_START = 0
-POSITION_WAITING = 1
-POSITION_ROOM1 = 2
-POSITION_ROOM2 = 3
-POSITION_ROOM3 = 4
+POSITION_START = "start"
+POSITION_WAITING = "waiting"
+POSITION_ROOM1 = "room1"
+POSITION_ROOM2 = "room2"
+POSITION_ROOM3 = "room3"
 positionRobot = POSITION_START
 
 def wait_for_phone_removed():
@@ -102,6 +102,22 @@ def driveToRoom(rooms, ws=None):
                     tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=400)
                     tank_drive.off()
                     wait_for_phone_placed()
+                    
+                    global positionRobot   
+                    print("positionRoboter", positionRobot) 
+                    print("target_index", target_index)
+                    if target_index == 1:
+                        positionRobot = POSITION_WAITING
+                    elif target_index == 2:
+                        positionRobot = POSITION_ROOM1
+                    elif target_index == 3:
+                        positionRobot = POSITION_ROOM2
+                    elif target_index == 4:
+                        positionRobot = POSITION_ROOM3
+                    else:
+                        print("Unbekannter Zielraum Position nicht gesetzt.")
+
+                    print("Position Roboter gesetzt auf:", positionRobot)
                     return
                 else:
                     if floor_color == BLACK:
@@ -112,19 +128,7 @@ def driveToRoom(rooms, ws=None):
                         tank_drive.on(left_speed=20, right_speed=20)
                 sleep(0.1)
 
-    global positionRobot    
-    if target_index == 0:
-        positionRobot = POSITION_WAITING
-    elif target_index == 1:
-        positionRobot = POSITION_ROOM1
-    elif target_index == 2:
-        positionRobot = POSITION_ROOM2
-    elif target_index == 3:
-        positionRobot = POSITION_ROOM3
-    else:
-        print("Unbekannter Zielraum Position nicht gesetzt.")
 
-    print("Position Roboter gesetzt auf:", positionRobot)
     return
 
 def driveToBase():
@@ -265,6 +269,7 @@ def main():
     # Startpunkt des Programms
     #driveToRoom([1, 0, 0, 0])
     #driveToBase()
+    
     pickupPatientFromWaitingRoom()
 
 try:
