@@ -49,6 +49,7 @@ def wait_for_phone_placed():
     print("Handy erkannt. Roboter faehrt weiter.")
 
 def driveToRoom(rooms, ws=None):
+    global positionRobot
     wait_for_phone_removed()
 
     target_index = None
@@ -72,6 +73,10 @@ def driveToRoom(rooms, ws=None):
     """
 
     print("Ziel: Zimmernummer {} - Roboter soll dort abbiegen.".format(target_index))
+    from_waiting_room = positionRobot == POSITION_WAITING
+    if from_waiting_room:
+        turn_left_to_rooms(target_index)
+
     green_count = 0
 
     while True:
@@ -103,7 +108,6 @@ def driveToRoom(rooms, ws=None):
                     tank_drive.off()
                     wait_for_phone_placed()
                     
-                    global positionRobot   
                     print("positionRoboter", positionRobot) 
                     print("target_index", target_index)
                     if target_index == 1:
@@ -130,6 +134,53 @@ def driveToRoom(rooms, ws=None):
 
 
     return
+
+
+def turn_left_to_rooms(target_index):
+    print("Verlasse das Wartezimmer und fahre in den gewaehlten Raum:", target_index)
+      # PHASE 1: Erste blaue Platte erkennen und rechts abbiegen
+    while True:
+        floor_color = sensor_floor.color
+        right_color_id = sensor_right.value(0)
+        distance = sensor_ir.proximity
+
+        #print(">>> Rueckfahrt - Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
+
+        # Hindernisvermeidung
+        if distance < 30:
+            print("Hindernis erkannt - Roboter stoppt.")
+            tank_drive.off()
+            while sensor_ir.proximity < 30:
+                sleep(0.1)
+            print("Hindernis entfernt - Roboter faehrt weiter.")
+
+        elif right_color_id == BLUE:
+            print("Erste blaue Platte erkannt - 90 Grad nach links drehen")
+            tank_drive.off()
+            tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=200)
+            tank_drive.off()
+            break  # Wechsle zu Phase 2
+
+        elif floor_color == BLACK:
+            tank_drive.on(left_speed=20, right_speed=25)
+        elif floor_color == WHITE:
+            tank_drive.on(left_speed=25, right_speed=20)
+        else:
+            tank_drive.on(left_speed=20, right_speed=20)
+
+        sleep(0.1)
+
+    green_count = 0
+    while True:
+        result, green_count = follow_line_with_green_count(target_index, green_count)
+
+        if result == TARGET_ROOM_REACHED:
+            print("Ziel erreicht  links abbiegen in den Raum")
+            tank_drive.off()
+            turn_left_90_degrees()
+            return
+        sleep(0.1)
+
 
 def driveToBase():
     """
@@ -271,6 +322,7 @@ def main():
     #driveToBase()
     
     pickupPatientFromWaitingRoom()
+    driveToRoom([0,1,0,0])
 
 try:
     if __name__ == '__main__':
