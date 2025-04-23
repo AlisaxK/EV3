@@ -365,37 +365,43 @@ class EV3CommandHandler:
             self.ws.send(json.dumps({
                 "type": "status",
                 "message": "busy",
-                "rejected_command": command.get("action")
+                "rejected_command": command.get("Type")
             }))
             return
 
         self.busy = True
-        action = command.get("action")
+        action = command.get("Type")
 
         try:
-            if action == "driveToRoom":
-                rooms = command.get("rooms", [0,0,0,0])
-                driveToRoom(rooms, ws=None) # self.ws übergeben
-                self.ws.send(json.dumps({
-                "type": "info",
-                "message": "driveToRoom"
+            if action == "DRIVE_TO_ROOM":
+                rooms = command.get("Target", [0,0,0,0])
+                driveToRoom(rooms, self.ws) # self.ws übergeben
+                self.ws.send(json.dumps({ # antwort in drive to room verschieben
+                    "Type": "DRIVE_TO_ROOM_ANSWER",
+                    "Answer": "TRUE"
                 }))
 
-            elif action == "driveToBase":
+            elif action == "DRIVE_TO_BASE":
                 driveToBase()
-                self.ws.send(json.dumps({"type": "info", "message": "driveToBase"}))
+                 self.ws.send(json.dumps({
+                    "Type": "DRIVE_TO_BASE_ANSWER",
+                    "Answer": "TRUE"
+                }))
 
-            elif action == "PickupPatientFromWaitingRoom":
+            elif action == "PICK_PATIENT":
                 PickupPatientFromWaitingRoom()
-                self.ws.send(json.dumps({"type": "info", "message": "PickupPatientFromWaitingRoom"}))
+                self.ws.send(json.dumps({
+                    "Type": "PICK_PATIENT_ANSWER",
+                    "Answer": "TRUE"
+                }))
 
             else:
                 print("Unbekannter Befehl:", action)
-                self.ws.send(json.dumps({"type": "error", "message": "unknown_command"}))
+                self.ws.send(json.dumps({"Type": "error", "Answer": "unknown_command"}))
 
         except Exception as e:
             print("Fehler bei Ausführung:", e)
-            self.ws.send(json.dumps({"type": "error", "message": str(e)}))
+            self.ws.send(json.dumps({"Type": "error", "Answer": str(e)}))
 
         finally:
             self.busy = False
