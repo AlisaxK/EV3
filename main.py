@@ -1,17 +1,14 @@
-#!/usr/bin/env python3
 from ev3dev2.motor import LargeMotor, OUTPUT_A, OUTPUT_D, MoveTank
-from ev3dev2.sensor.lego import TouchSensor, ColorSensor
+from ev3dev2.sensor.lego import TouchSensor, ColorSensor, InfraredSensor
 from ev3dev2.sensor import Sensor
 from time import sleep
-from websocket_client import EV3WebSocketClient
-
-
-
+#from websocket_client import EV3WebSocketClient
 
 # Initialisiere die Sensoren
 sensor_touch = TouchSensor()
 sensor_floor = ColorSensor(address='in2')     # EV3 Color Sensor auf Boden
 sensor_right = Sensor(address='in3', driver_name='ht-nxt-color')  # HiTechnic Sensor nach rechts
+sensor_ir = InfraredSensor(address='in4')     # Infrarot-Sensor vorne
 
 # Initialisiere die Motoren
 tank_drive = MoveTank(OUTPUT_A, OUTPUT_D)
@@ -21,105 +18,331 @@ BLACK = 0
 WHITE = 1
 YELLOW = 6
 PURPLE = 7
-BLUE = 2
-GREEN = 3
+BLUE = 3
+GREEN = 4
 RED = 5
 THRESHOLD = (BLACK + WHITE) / 2  # Schwellenwert fuer die Linie
 
-# Raumfarben in Reihenfolge: [Raum 0, Raum 1, Raum 2, Raum 3]
-room_colors = [YELLOW, PURPLE, RED, BLUE]
-
 # Results line following
-TARGET_ROOM_REACHED = "TARGET_REACHED"
+TARGET_ROOM_REACHED = "TARGET_ROOM_REACHED"
 CONTINUE_SEARCH = "CONTINUE_SEARCH"
+last_color_green = False
 
-def driveToRoom(rooms, ws=None): #ws=None übergeben, um Status zu senden
-    #Roboter fährt in ein Behandlungszimmer oder in das Wartezimmer
-    #Prüfung, ob Handy auf sensor liegt, sonst error Code zurückgeben „no_phone_detected"
-    # Status success wenn erfolgreich
-    print("Warte auf 5 Sekunden langen Druck auf den Touchsensor")
-    pressed_time = 0
-    while pressed_time < 5:
-        if sensor_touch.is_pressed:
-            sleep(1)
-            pressed_time += 1
-            print("{} Sekunde(n) gedrueckt".format(pressed_time))
+# current Position
+POSITION_START = "start"
+POSITION_WAITING = "waiting"
+POSITION_ROOM1 = "room1"
+POSITION_ROOM2 = "room2"
+POSITION_ROOM3 = "room3"
+positionRobot = POSITION_START
+
+def wait_for_phone_removed():
+    print("Warte darauf, dass das Handy entfernt wird...")
+    while sensor_touch.is_pressed:
+        sleep(0.1)
+    print("Handy entfernt. Starte Raumwahl.")
+
+def wait_for_phone_placed():
+    print("Warte darauf, dass das Handy wieder platziert wird...")
+    while not sensor_touch.is_pressed:
+        sleep(0.1)
+    print("Handy erkannt. Roboter faehrt weiter.")
+
+def driveToRoom(rooms, ws=None):
+    global positionRobot
+    wait_for_phone_removed()
+
+    target_index = None
+    for i, val in enumerate(rooms):
+        if val == 1:
+            target_index = i + 1  # Zimmernummern starten bei 1
+            break
+
+    if target_index is None:
+        print("Kein Zielraum angegeben – Abbruch.")
+        return
+
+    """
+    while target_index is None:
+        print("Waehle Ziel-Zimmer: (1) Zimmer 1, (2) Zimmer 2, (3) Zimmer 3, (4) Zimmer 4")
+        eingabe = input("Eingabe: ")
+        if eingabe in ["1", "2", "3", "4"]:
+            target_index = int(eingabe)
         else:
-            pressed_time = 0 # Timer zurücksetzen, wenn losgelassen
+            print("Ungueltige Eingabe. Bitte 1 bis 4 waehlen.")
+    """
 
-    print("Startsignal erkannt. Roboter faehrt los")
+    print("Ziel: Zimmernummer {} - Roboter soll dort abbiegen.".format(target_index))
+    from_waiting_room = positionRobot == POSITION_WAITING
+    if from_waiting_room:
+        turn_left_to_rooms(target_index)
+        return
 
-    # Ziel-Farbwahl durch Benutzer
-    print("Waehle Ziel-Farbe: (1) Blau, (2) Gruen")
-    auswahl = input("Eingabe: ")
-    if auswahl == "1":
-        target_color = BLUE
-    elif auswahl == "2":
-        target_color = GREEN
-    else:
-        print("Ungueltige Auswahl. Standard: Blau")
-        target_color = BLUE
-
-    print("Ziel: Farbe {} - Roboter soll dort abbiegen.".format(target_color))
+    green_count = 0
 
     while True:
-        result = follow_line(target_color, room_colors)
+        result, green_count = follow_line_with_green_count(target_index, green_count)
 
         if result == TARGET_ROOM_REACHED:
             print("Ziel erreicht - nach links abbiegen und Linie suchen")
             turn_left_90_degrees()
+
+            # Folge der Linie bis zur blauen Platte im Raum
             while True:
-                follow_result = follow_line(target_color, room_colors)
-                if follow_result == TARGET_ROOM_REACHED:
-                    print("Zweites Ziel erreicht oder erneut gleiche Farbe erkannt.")
-                    break
-            break
+                floor_color = sensor_floor.color
+                right_color_id = sensor_right.value(0)
+                distance = sensor_ir.proximity
+
+                #print(">>> Nach dem Abbiegen - Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
+
+                if distance < 30:
+                    print("Hindernis erkannt - Roboter stoppt.")
+                    tank_drive.off()
+                    while sensor_ir.proximity < 30:
+                        sleep(0.1)
+                    print("Hindernis entfernt - Roboter faehrt weiter.")
+
+                elif right_color_id == BLUE:
+                    print("Blaue Platte im Raum erkannt - 180 Grad drehen und auf Handy warten")
+                    tank_drive.off()
+                    tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=400)
+                    tank_drive.off()
+                    wait_for_phone_placed()
+                    
+                    print("positionRoboter", positionRobot) 
+                    print("target_index", target_index)
+                    if target_index == 1:
+                        positionRobot = POSITION_WAITING
+                    elif target_index == 2:
+                        positionRobot = POSITION_ROOM1
+                    elif target_index == 3:
+                        positionRobot = POSITION_ROOM2
+                    elif target_index == 4:
+                        positionRobot = POSITION_ROOM3
+                    else:
+                        print("Unbekannter Zielraum Position nicht gesetzt.")
+
+                    print("Position Roboter gesetzt auf:", positionRobot)
+                    return
+                else:
+                    if floor_color == BLACK:
+                        tank_drive.on(left_speed=20, right_speed=25)
+                    elif floor_color == WHITE:
+                        tank_drive.on(left_speed=25, right_speed=20)
+                    else:
+                        tank_drive.on(left_speed=20, right_speed=20)
+                sleep(0.1)
+
+
+    return
+
+
+def turn_left_to_rooms(target_index):
+    print("Verlasse das Wartezimmer und fahre in den gewaehlten Raum:", target_index)
+      # PHASE 1: Erste blaue Platte erkennen und rechts abbiegen
+    while True:
+        floor_color = sensor_floor.color
+        right_color_id = sensor_right.value(0)
+        distance = sensor_ir.proximity
+
+        #print(">>> Rueckfahrt - Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
+
+        # Hindernisvermeidung
+        if distance < 30:
+            print("Hindernis erkannt - Roboter stoppt.")
+            tank_drive.off()
+            while sensor_ir.proximity < 30:
+                sleep(0.1)
+            print("Hindernis entfernt - Roboter faehrt weiter.")
+
+        elif right_color_id == BLUE:
+            print("Erste blaue Platte erkannt - 90 Grad nach links drehen")
+            tank_drive.off()
+            tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=200)
+            tank_drive.off()
+            break  # Wechsle zu Phase 2
+
+        elif floor_color == BLACK:
+            tank_drive.on(left_speed=20, right_speed=25)
+        elif floor_color == WHITE:
+            tank_drive.on(left_speed=25, right_speed=20)
+        else:
+            tank_drive.on(left_speed=20, right_speed=20)
+
+        sleep(0.1)
+
+    while True:
+        floor_color = sensor_floor.color
+        right_color_id = sensor_right.value(0)
+        distance = sensor_ir.proximity
+
+        if distance < 30:
+            print("Hindernis erkannt  warte...")
+            tank_drive.off()
+            while sensor_ir.proximity < 30:
+                sleep(0.1)
+            print("Hindernis entfernt weiterfahren.")
+
+        elif right_color_id == BLUE:
+            print("Ziel im Raum erreicht drehen und auf Handy warten")
+            tank_drive.off()
+            tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=400)
+            tank_drive.off()
+            wait_for_phone_placed()
+            return
+
+        else:
+            if floor_color == BLACK:
+                tank_drive.on(left_speed=20, right_speed=25)
+            elif floor_color == WHITE:
+                tank_drive.on(left_speed=25, right_speed=20)
+            else:
+                tank_drive.on(left_speed=20, right_speed=20)
+
+        sleep(0.1)
+
 
 def driveToBase():
-    # Roboter fährt zu Ausgangspunkt zurück
-    # eventuell prüfen, ob Handy auf dem Roboter liegt, sonst error Code „no_phone_detected“
-    # success wenn erfolgreich
-    print("Fahre zu Start")
+    """
+    Roboter fährt zur Basis zurück:
+    - Erkennt erste blaue Platte rechts → 90° rechts drehen
+    - Fährt weiter bis zweite blaue Platte → 180° drehen und stoppen
+    """
+    print("Starte fahrt zur Basis")
 
-def PickupPatientFromWaitingRoom():
+    # PHASE 1: Erste blaue Platte erkennen und rechts abbiegen
+    while True:
+        floor_color = sensor_floor.color
+        right_color_id = sensor_right.value(0)
+        distance = sensor_ir.proximity
+
+        #print(">>> Rueckfahrt - Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
+
+        # Hindernisvermeidung
+        if distance < 30:
+            print("Hindernis erkannt - Roboter stoppt.")
+            tank_drive.off()
+            while sensor_ir.proximity < 30:
+                sleep(0.1)
+            print("Hindernis entfernt - Roboter faehrt weiter.")
+
+        elif right_color_id == BLUE:
+            print("Erste blaue Platte erkannt - 90 Grad nach rechts drehen")
+            tank_drive.off()
+            tank_drive.on_for_degrees(left_speed=20, right_speed=-20, degrees=200)
+            tank_drive.off()
+            break  # Wechsle zu Phase 2
+
+        elif floor_color == BLACK:
+            tank_drive.on(left_speed=20, right_speed=25)
+        elif floor_color == WHITE:
+            tank_drive.on(left_speed=25, right_speed=20)
+        else:
+            tank_drive.on(left_speed=20, right_speed=20)
+
+        sleep(0.1)
+
+    # PHASE 2: Zweite blaue Platte erkennen und 180° drehen
+    while True:
+        floor_color = sensor_floor.color
+        right_color_id = sensor_right.value(0)
+        distance = sensor_ir.proximity
+
+        #print(">>> Zielsuche - Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
+
+        if distance < 30:
+            print("Hindernis erkannt - Roboter stoppt.")
+            tank_drive.off()
+            while sensor_ir.proximity < 30:
+                sleep(0.1)
+            print("Hindernis entfernt - Roboter faehrt weiter.")
+
+        elif right_color_id == BLUE:
+            print("Zweite blaue Platte (rechts) erkannt - Roboter dreht 180 Grad und stoppt")
+            tank_drive.off()
+            tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=420)
+            tank_drive.off()
+            return
+
+        elif floor_color == BLACK:
+            tank_drive.on(left_speed=20, right_speed=25)
+        elif floor_color == WHITE:
+            tank_drive.on(left_speed=25, right_speed=20)
+        else:
+            tank_drive.on(left_speed=20, right_speed=20)
+
+        sleep(0.1)
+
+        global positionRobot
+        positionRobot = POSITION_START
+        print("Position zurückgesetzt auf: ", positionRobot)
+
+
+def pickupPatientFromWaitingRoom():
     # Roboter fährt ins Wartezimmer um Patient abzuholen
     # Prüfen, ob Handy aufgehoben wurde, sonst error Code zurückgeben  „phone_not_removed“ 
     # success wenn erfolgreich
     print("Hole Patient im Wartezimmer ab")
+    wait_for_phone_removed()
+    waitingRoom = [1, 0, 0, 0]
+    driveToRoom(waitingRoom)
+
 
 def turn_left_90_degrees():
-     """""" Dreht den Roboter nach um 90° nach links, bis er wieder Schwarz erkennt """"""
+    #Dreht den Roboter nach um 90° nach links, bis er wieder Schwarz erkennt
     print("Drehe 90 Grad nach links")
     tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=200)
     tank_drive.off()
 
-def follow_line(target_color, all_room_colors):
+def follow_line_with_green_count(target_count, green_seen):
+    global last_color_green
     floor_color = sensor_floor.color
     right_color_id = sensor_right.value(0)
+    distance = sensor_ir.proximity
 
-    print(">>> Bodenfarbe: {}, Rechts erkannt (ID): {}".format(floor_color, right_color_id))
+    #print(">>> Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}, Gruen gezaehlt: {}".format(floor_color, right_color_id, distance, green_seen))
 
-    if right_color_id == target_color:
-        print("Ziel-Farbblock erkannt (rechts). Biege ab.")
+    # Wenn Hindernis erkannt wird, stoppe
+    if distance < 30:
+        print("Hindernis erkannt - Roboter stoppt.")
         tank_drive.off()
-        return TARGET_ROOM_REACHED
+        while sensor_ir.proximity < 30:
+            sleep(0.1)
+        print("Hindernis entfernt - Roboter faehrt weiter.")
+        return CONTINUE_SEARCH, green_seen
 
-    elif right_color_id in all_room_colors:
-        print("Falsche Raumfarbe erkannt (rechts), weiterfahren")
-        tank_drive.on_for_seconds(left_speed=15, right_speed=15, seconds=1)
-        return CONTINUE_SEARCH
-
-    if floor_color == BLACK:
-        tank_drive.on(left_speed=10, right_speed=15)
-    elif floor_color == WHITE:
-        tank_drive.on(left_speed=15, right_speed=10)
+    # Nur bei Übergang von Nicht Gruen zu Gruen zählen
+    if right_color_id == GREEN:
+        if not last_color_green:
+            green_seen += 1
+            print("Uebergang zu Gruen erkannt. Gruen Platte Nummer {} gezaehlt.".format(green_seen))
+        last_color_green = True
+        if green_seen == target_count:
+            print("Ziel erreicht. Abbiegen.")
+            tank_drive.off()
+            return TARGET_ROOM_REACHED, green_seen
+        else:
+            tank_drive.on_for_seconds(left_speed=15, right_speed=15, seconds=1)
+            return CONTINUE_SEARCH, green_seen
     else:
-        tank_drive.on(left_speed=10, right_speed=10)
-    return CONTINUE_SEARCH
+        last_color_green = False
+
+    # Linienverfolgung basierend auf Bodenfarbe
+    if floor_color == BLACK:
+        tank_drive.on(left_speed=20, right_speed=25)
+    elif floor_color == WHITE:
+        tank_drive.on(left_speed=25, right_speed=20)
+    else:
+        tank_drive.on(left_speed=20, right_speed=20)
+    return CONTINUE_SEARCH, green_seen
 
 def main():
-    print("Druecke den Touch-Sensor fuer 5 Sekunden, um den Roboter starten zu lassen.")
-    driveToRoom()
+    # Startpunkt des Programms
+    #driveToRoom([1, 0, 0, 0])
+    #driveToBase()
+    
+    pickupPatientFromWaitingRoom()
+    driveToRoom([0,1,0,0])
 
 try:
     if __name__ == '__main__':
@@ -128,8 +351,6 @@ try:
 except KeyboardInterrupt:
     print("Test beendet.")
     tank_drive.off()
-
-
 
 ### 
 
