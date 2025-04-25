@@ -3,6 +3,7 @@ from threading import Thread
 import json
 from time import sleep
 
+websocket.enableTrace(True) # for Debugging
 class EV3WebSocketClient:
     def __init__(self, url, command_callback):
         self.url = url
@@ -24,6 +25,7 @@ class EV3WebSocketClient:
         print("WebSocket-Verbindung mit Roboter geschlossen")
 
     def on_open(self, ws):
+        print("WebSocket-Verbindung geöffnet")
         def delayed_send():
             sleep(1)  # Wichtiger: 1 Sekunde
             try:
@@ -33,10 +35,21 @@ class EV3WebSocketClient:
         Thread(target=delayed_send).start()
 
     def start(self):
-        self.ws = WebSocketApp(self.url,
-                               on_message=self.on_message,
-                               on_error=self.on_error,
-                               on_close=self.on_close,
-                               on_open=self.on_open)
-        thread = Thread(target=self.ws.run_forever, daemon=True)
+        def run():
+            while True:
+                print("Versuche Verbindung zum Server...")
+                self.ws = WebSocketApp(self.url,
+                                    on_message=self.on_message,
+                                    on_error=self.on_error,
+                                    on_close=self.on_close,
+                                    on_open=self.on_open)
+                try:
+                    self.ws.run_forever()
+                except Exception as e:
+                    print("Fehler bei run_forever:", e)
+
+                print("Verbindung getrennt warte 5 Sekunden und versuche erneut...")
+                sleep(5)
+
+        thread = Thread(target=run, daemon=True)
         thread.start()

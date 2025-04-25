@@ -4,6 +4,7 @@ from ev3dev2.sensor import Sensor
 from time import sleep
 from websocket_client import EV3WebSocketClient
 
+
 # Initialisiere die Sensoren
 sensor_touch = TouchSensor()
 sensor_floor = ColorSensor(address='in2')     # EV3 Color Sensor auf Boden
@@ -61,16 +62,6 @@ def driveToRoom(rooms, ws=None):
     if target_index is None:
         print("Kein Zielraum angegeben – Abbruch.")
         return
-
-    """
-    while target_index is None:
-        print("Waehle Ziel-Zimmer: (1) Zimmer 1, (2) Zimmer 2, (3) Zimmer 3, (4) Zimmer 4")
-        eingabe = input("Eingabe: ")
-        if eingabe in ["1", "2", "3", "4"]:
-            target_index = int(eingabe)
-        else:
-            print("Ungueltige Eingabe. Bitte 1 bis 4 waehlen.")
-    """
 
     print("Ziel: Zimmernummer {} - Roboter soll dort abbiegen.".format(target_index))
     from_waiting_room = positionRobot == POSITION_WAITING
@@ -275,7 +266,7 @@ def driveToBase():
 
         global positionRobot
         positionRobot = POSITION_START
-        print("Position zurückgesetzt auf: ", positionRobot)
+        print("Position zuruckgesetzt auf: ", positionRobot)
 
 
 def pickupPatientFromWaitingRoom():
@@ -335,14 +326,11 @@ def follow_line_with_green_count(target_count, green_seen):
     else:
         tank_drive.on(left_speed=20, right_speed=20)
     return CONTINUE_SEARCH, green_seen
-
 def main():
     # Startpunkt des Programms
     #driveToRoom([1, 0, 0, 0])
     #driveToBase()
     
-    pickupPatientFromWaitingRoom()
-    driveToRoom([0,1,0,0])
 
 try:
     if __name__ == '__main__':
@@ -365,37 +353,43 @@ class EV3CommandHandler:
             self.ws.send(json.dumps({
                 "type": "status",
                 "message": "busy",
-                "rejected_command": command.get("action")
+                "rejected_command": command.get("Type")
             }))
             return
 
         self.busy = True
-        action = command.get("action")
+        action = command.get("Type")
 
         try:
-            if action == "driveToRoom":
-                rooms = command.get("rooms", [0,0,0,0])
-                driveToRoom(rooms, ws=None) # self.ws übergeben
-                self.ws.send(json.dumps({
-                "type": "info",
-                "message": "driveToRoom"
+            if action == "DRIVE_TO_ROOM":
+                rooms = command.get("Target", [0,0,0,0])
+                driveToRoom(rooms, self.ws) # self.ws übergeben
+                self.ws.send(json.dumps({ # antwort in drive to room verschieben
+                    "Type": "DRIVE_TO_ROOM_ANSWER",
+                    "Answer": "TRUE"
                 }))
 
-            elif action == "driveToBase":
+            elif action == "DRIVE_TO_BASE":
                 driveToBase()
-                self.ws.send(json.dumps({"type": "info", "message": "driveToBase"}))
+                self.ws.send(json.dumps({
+                    "Type": "DRIVE_TO_BASE_ANSWER",
+                    "Answer": "TRUE"
+                }))
 
-            elif action == "PickupPatientFromWaitingRoom":
+            elif action == "PICK_PATIENT":
                 PickupPatientFromWaitingRoom()
-                self.ws.send(json.dumps({"type": "info", "message": "PickupPatientFromWaitingRoom"}))
+                self.ws.send(json.dumps({
+                    "Type": "PICK_PATIENT_ANSWER",
+                    "Answer": "TRUE"
+                }))
 
             else:
                 print("Unbekannter Befehl:", action)
-                self.ws.send(json.dumps({"type": "error", "message": "unknown_command"}))
+                self.ws.send(json.dumps({"Type": "error", "Answer": "unknown_command"}))
 
         except Exception as e:
             print("Fehler bei Ausführung:", e)
-            self.ws.send(json.dumps({"type": "error", "message": str(e)}))
+            self.ws.send(json.dumps({"Type": "error", "Answer": str(e)}))
 
         finally:
             self.busy = False
