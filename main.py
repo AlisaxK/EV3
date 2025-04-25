@@ -331,16 +331,13 @@ def main():
     #driveToRoom([1, 0, 0, 0])
     #driveToBase()
     
+    try:
+        if __name__ == '__main__':
+            main()
 
-try:
-    if __name__ == '__main__':
-        main()
-
-except KeyboardInterrupt:
-    print("Test beendet.")
-    tank_drive.off()
-
-### 
+    except KeyboardInterrupt:
+        print("Test beendet.")
+        tank_drive.off()
 
 class EV3CommandHandler:
     def __init__(self, ws):
@@ -396,7 +393,7 @@ class EV3CommandHandler:
 
 if __name__ == "__main__":
     # Starte WebSocket-Client
-    websocket_url = "ws://<SERVER_IP>:3001"  # Ersetze <SERVER_IP> mit deiner Server-IP
+    websocket_url = "ws://192.168.2.45:3001"  # Ersetze <SERVER_IP> mit deiner Server-IP
     command_handler= EV3CommandHandler(None)
     ws_client = EV3WebSocketClient(websocket_url, command_handler.handle_command) # handle_command als Callback
     ws_client.start()
