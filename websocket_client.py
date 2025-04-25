@@ -1,8 +1,6 @@
-
 from websocket import WebSocketApp
 from threading import Thread
 import json
-import websocket
 from time import sleep
 
 websocket.enableTrace(True) # for Debugging
@@ -28,8 +26,13 @@ class EV3WebSocketClient:
 
     def on_open(self, ws):
         print("WebSocket-Verbindung geöffnet")
-        ws.send("sm") # hier noch den key vom roboter einfügen
-        
+        def delayed_send():
+            sleep(1)  # Wichtiger: 1 Sekunde
+            try:
+                ws.send("ro")
+            except Exception as e:
+                print("Fehler beim Senden:", e)
+        Thread(target=delayed_send).start()
 
     def start(self):
         def run():
