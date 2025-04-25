@@ -2,7 +2,7 @@ from ev3dev2.motor import LargeMotor, OUTPUT_A, OUTPUT_D, MoveTank
 from ev3dev2.sensor.lego import TouchSensor, ColorSensor, InfraredSensor
 from ev3dev2.sensor import Sensor
 from time import sleep
-#from websocket_client import EV3WebSocketClient
+from websocket_client import EV3WebSocketClient
 
 # Initialisiere die Sensoren
 sensor_touch = TouchSensor()
