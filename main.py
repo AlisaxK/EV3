@@ -7,15 +7,17 @@ from websocket_client import EV3WebSocketClient
 
 # Initialisiere die Sensoren
 sensor_touch = TouchSensor()
-sensor_floor = ColorSensor(address='in2')     # EV3 Color Sensor auf Boden
-sensor_right = Sensor(address='in3', driver_name='ht-nxt-color')  # HiTechnic Sensor nach rechts
-sensor_ir = InfraredSensor(address='in4')     # Infrarot-Sensor vorne
+sensor_floor = ColorSensor(address="in2")  # EV3 Color Sensor auf Boden
+sensor_right = Sensor(
+    address="in3", driver_name="ht-nxt-color"
+)  # HiTechnic Sensor nach rechts
+sensor_ir = InfraredSensor(address="in4")  # Infrarot-Sensor vorne
 
 # Initialisiere die Motoren
 tank_drive = MoveTank(OUTPUT_A, OUTPUT_D)
 
 # Farbwerte fuer die Linienverfolgung
-BLACK = 0  
+BLACK = 0
 WHITE = 1
 YELLOW = 6
 PURPLE = 7
@@ -37,17 +39,20 @@ POSITION_ROOM2 = "room2"
 POSITION_ROOM3 = "room3"
 positionRobot = POSITION_START
 
+
 def wait_for_phone_removed():
     print("Warte darauf, dass das Handy entfernt wird...")
     while sensor_touch.is_pressed:
         sleep(0.1)
     print("Handy entfernt. Starte Raumwahl.")
 
+
 def wait_for_phone_placed():
     print("Warte darauf, dass das Handy wieder platziert wird...")
     while not sensor_touch.is_pressed:
         sleep(0.1)
     print("Handy erkannt. Roboter faehrt weiter.")
+
 
 def driveToRoom(rooms, ws=None):
     global positionRobot
@@ -66,6 +71,7 @@ def driveToRoom(rooms, ws=None):
     print("Ziel: Zimmernummer {} - Roboter soll dort abbiegen.".format(target_index))
     from_waiting_room = positionRobot == POSITION_WAITING
     if from_waiting_room:
+        print("Roboter kommt vom Warteraum und faehrt nach links")
         turn_left_to_rooms(target_index)
         return
 
@@ -84,7 +90,7 @@ def driveToRoom(rooms, ws=None):
                 right_color_id = sensor_right.value(0)
                 distance = sensor_ir.proximity
 
-                #print(">>> Nach dem Abbiegen - Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
+                # print(">>> Nach dem Abbiegen - Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
 
                 if distance < 30:
                     print("Hindernis erkannt - Roboter stoppt.")
@@ -94,13 +100,17 @@ def driveToRoom(rooms, ws=None):
                     print("Hindernis entfernt - Roboter faehrt weiter.")
 
                 elif right_color_id == BLUE:
-                    print("Blaue Platte im Raum erkannt - 180 Grad drehen und auf Handy warten")
+                    print(
+                        "Blaue Platte im Raum erkannt - 180 Grad drehen und auf Handy warten"
+                    )
                     tank_drive.off()
-                    tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=400)
+                    tank_drive.on_for_degrees(
+                        left_speed=-20, right_speed=20, degrees=400
+                    )
                     tank_drive.off()
                     wait_for_phone_placed()
-                    
-                    print("positionRoboter", positionRobot) 
+
+                    print("positionRoboter", positionRobot)
                     print("target_index", target_index)
                     if target_index == 1:
                         positionRobot = POSITION_WAITING
@@ -124,19 +134,18 @@ def driveToRoom(rooms, ws=None):
                         tank_drive.on(left_speed=20, right_speed=20)
                 sleep(0.1)
 
-
     return
 
 
 def turn_left_to_rooms(target_index):
     print("Verlasse das Wartezimmer und fahre in den gewaehlten Raum:", target_index)
-      # PHASE 1: Erste blaue Platte erkennen und rechts abbiegen
+    # PHASE 1: Erste blaue Platte erkennen und links abbiegen
     while True:
         floor_color = sensor_floor.color
         right_color_id = sensor_right.value(0)
         distance = sensor_ir.proximity
 
-        #print(">>> Rueckfahrt - Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
+        # print(">>> Rueckfahrt - Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
 
         # Hindernisvermeidung
         if distance < 30:
@@ -162,35 +171,50 @@ def turn_left_to_rooms(target_index):
 
         sleep(0.1)
 
+    # PHASE 2: Linie folgen und GRÜNE Platten zählen!
+    green_count = 1
+
     while True:
-        floor_color = sensor_floor.color
-        right_color_id = sensor_right.value(0)
-        distance = sensor_ir.proximity
+        result, green_count = follow_line_with_green_count(target_index, green_count)
 
-        if distance < 30:
-            print("Hindernis erkannt  warte...")
-            tank_drive.off()
-            while sensor_ir.proximity < 30:
+        if result == TARGET_ROOM_REACHED:
+            print("Ziel erreicht - nach links abbiegen und Linie suchen")
+            turn_left_90_degrees()
+
+            # PHASE 3: Folge der Linie im Raum bis zur blauen Platte
+            while True:
+                floor_color = sensor_floor.color
+                right_color_id = sensor_right.value(0)
+                distance = sensor_ir.proximity
+
+                if distance < 30:
+                    print("Hindernis erkannt - Roboter stoppt.")
+                    tank_drive.off()
+                    while sensor_ir.proximity < 30:
+                        sleep(0.1)
+                    print("Hindernis entfernt - Roboter faehrt weiter.")
+
+                elif right_color_id == BLUE:
+                    print(
+                        "Blaue Platte im Raum erkannt - 180 Grad drehen und auf Handy warten"
+                    )
+                    tank_drive.off()
+                    tank_drive.on_for_degrees(
+                        left_speed=-20, right_speed=20, degrees=400
+                    )
+                    tank_drive.off()
+                    wait_for_phone_placed()
+                    return
+
+                else:
+                    if floor_color == BLACK:
+                        tank_drive.on(left_speed=20, right_speed=25)
+                    elif floor_color == WHITE:
+                        tank_drive.on(left_speed=25, right_speed=20)
+                    else:
+                        tank_drive.on(left_speed=20, right_speed=20)
+
                 sleep(0.1)
-            print("Hindernis entfernt weiterfahren.")
-
-        elif right_color_id == BLUE:
-            print("Ziel im Raum erreicht drehen und auf Handy warten")
-            tank_drive.off()
-            tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=400)
-            tank_drive.off()
-            wait_for_phone_placed()
-            return
-
-        else:
-            if floor_color == BLACK:
-                tank_drive.on(left_speed=20, right_speed=25)
-            elif floor_color == WHITE:
-                tank_drive.on(left_speed=25, right_speed=20)
-            else:
-                tank_drive.on(left_speed=20, right_speed=20)
-
-        sleep(0.1)
 
 
 def driveToBase():
@@ -207,7 +231,7 @@ def driveToBase():
         right_color_id = sensor_right.value(0)
         distance = sensor_ir.proximity
 
-        #print(">>> Rueckfahrt - Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
+        # print(">>> Rueckfahrt - Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
 
         # Hindernisvermeidung
         if distance < 30:
@@ -239,7 +263,7 @@ def driveToBase():
         right_color_id = sensor_right.value(0)
         distance = sensor_ir.proximity
 
-        #print(">>> Zielsuche - Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
+        # print(">>> Zielsuche - Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
 
         if distance < 30:
             print("Hindernis erkannt - Roboter stoppt.")
@@ -249,7 +273,9 @@ def driveToBase():
             print("Hindernis entfernt - Roboter faehrt weiter.")
 
         elif right_color_id == BLUE:
-            print("Zweite blaue Platte (rechts) erkannt - Roboter dreht 180 Grad und stoppt")
+            print(
+                "Zweite blaue Platte (rechts) erkannt - Roboter dreht 180 Grad und stoppt"
+            )
             tank_drive.off()
             tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=420)
             tank_drive.off()
@@ -271,7 +297,7 @@ def driveToBase():
 
 def pickupPatientFromWaitingRoom():
     # Roboter fährt ins Wartezimmer um Patient abzuholen
-    # Prüfen, ob Handy aufgehoben wurde, sonst error Code zurückgeben  „phone_not_removed“ 
+    # Prüfen, ob Handy aufgehoben wurde, sonst error Code zurückgeben  „phone_not_removed“
     # success wenn erfolgreich
     print("Hole Patient im Wartezimmer ab")
     wait_for_phone_removed()
@@ -280,10 +306,11 @@ def pickupPatientFromWaitingRoom():
 
 
 def turn_left_90_degrees():
-    #Dreht den Roboter nach um 90° nach links, bis er wieder Schwarz erkennt
+    # Dreht den Roboter nach um 90° nach links, bis er wieder Schwarz erkennt
     print("Drehe 90 Grad nach links")
     tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=200)
     tank_drive.off()
+
 
 def follow_line_with_green_count(target_count, green_seen):
     global last_color_green
@@ -291,7 +318,7 @@ def follow_line_with_green_count(target_count, green_seen):
     right_color_id = sensor_right.value(0)
     distance = sensor_ir.proximity
 
-    #print(">>> Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}, Gruen gezaehlt: {}".format(floor_color, right_color_id, distance, green_seen))
+    # print(">>> Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}, Gruen gezaehlt: {}".format(floor_color, right_color_id, distance, green_seen))
 
     # Wenn Hindernis erkannt wird, stoppe
     if distance < 30:
@@ -306,7 +333,11 @@ def follow_line_with_green_count(target_count, green_seen):
     if right_color_id == GREEN:
         if not last_color_green:
             green_seen += 1
-            print("Uebergang zu Gruen erkannt. Gruen Platte Nummer {} gezaehlt.".format(green_seen))
+            print(
+                "Uebergang zu Gruen erkannt. Gruen Platte Nummer {} gezaehlt.".format(
+                    green_seen
+                )
+            )
         last_color_green = True
         if green_seen == target_count:
             print("Ziel erreicht. Abbiegen.")
@@ -326,18 +357,25 @@ def follow_line_with_green_count(target_count, green_seen):
     else:
         tank_drive.on(left_speed=20, right_speed=20)
     return CONTINUE_SEARCH, green_seen
+
+
 def main():
     # Startpunkt des Programms
-    #driveToRoom([1, 0, 0, 0])
-    #driveToBase()
-    
+    print("Start")
+    # driveToRoom([1, 0, 0, 0])
+    pickupPatientFromWaitingRoom()
+    driveToRoom([0, 0, 1, 0])
+    # driveToBase()
+
+
+if __name__ == "__main__":
     try:
-        if __name__ == '__main__':
-            main()
+        main()
 
     except KeyboardInterrupt:
         print("Test beendet.")
         tank_drive.off()
+
 
 class EV3CommandHandler:
     def __init__(self, ws):
@@ -347,11 +385,15 @@ class EV3CommandHandler:
     def handle_command(self, command):
         if self.busy:
             print("Roboter ist beschäftigt. Ignoriere Befehl:", command)
-            self.ws.send(json.dumps({
-                "type": "status",
-                "message": "busy",
-                "rejected_command": command.get("Type")
-            }))
+            self.ws.send(
+                json.dumps(
+                    {
+                        "type": "status",
+                        "message": "busy",
+                        "rejected_command": command.get("Type"),
+                    }
+                )
+            )
             return
 
         self.busy = True
@@ -359,26 +401,28 @@ class EV3CommandHandler:
 
         try:
             if action == "DRIVE_TO_ROOM":
-                rooms = command.get("Target", [0,0,0,0])
-                driveToRoom(rooms, self.ws) # self.ws übergeben
-                self.ws.send(json.dumps({ # antwort in drive to room verschieben
-                    "Type": "DRIVE_TO_ROOM_ANSWER",
-                    "Answer": "TRUE"
-                }))
+                rooms = command.get("Target", [0, 0, 0, 0])
+                driveToRoom(rooms, self.ws)  # self.ws übergeben
+                self.ws.send(
+                    json.dumps(
+                        {  # antwort in drive to room verschieben
+                            "Type": "DRIVE_TO_ROOM_ANSWER",
+                            "Answer": "TRUE",
+                        }
+                    )
+                )
 
             elif action == "DRIVE_TO_BASE":
                 driveToBase()
-                self.ws.send(json.dumps({
-                    "Type": "DRIVE_TO_BASE_ANSWER",
-                    "Answer": "TRUE"
-                }))
+                self.ws.send(
+                    json.dumps({"Type": "DRIVE_TO_BASE_ANSWER", "Answer": "TRUE"})
+                )
 
             elif action == "PICK_PATIENT":
                 PickupPatientFromWaitingRoom()
-                self.ws.send(json.dumps({
-                    "Type": "PICK_PATIENT_ANSWER",
-                    "Answer": "TRUE"
-                }))
+                self.ws.send(
+                    json.dumps({"Type": "PICK_PATIENT_ANSWER", "Answer": "TRUE"})
+                )
 
             else:
                 print("Unbekannter Befehl:", action)
@@ -391,11 +435,16 @@ class EV3CommandHandler:
         finally:
             self.busy = False
 
+
 if __name__ == "__main__":
     # Starte WebSocket-Client
-    websocket_url = "ws://192.168.2.45:3001"  # Ersetze <SERVER_IP> mit deiner Server-IP
-    command_handler= EV3CommandHandler(None)
-    ws_client = EV3WebSocketClient(websocket_url, command_handler.handle_command) # handle_command als Callback
+    websocket_url = (
+        "ws://192.168.2.170:3001"  # Ersetze <SERVER_IP> mit deiner Server-IP
+    )
+    command_handler = EV3CommandHandler(None)
+    ws_client = EV3WebSocketClient(
+        websocket_url, command_handler.handle_command
+    )  # handle_command als Callback
     ws_client.start()
 
     try:
