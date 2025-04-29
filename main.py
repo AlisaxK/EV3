@@ -77,6 +77,23 @@ def wait_for_phone_placed(ws=None, timeout_seconds=5):
 
 def driveToRoom(rooms, ws=None):
     global positionRobot
+
+    if (
+        not isinstance(rooms, list)
+        or len(rooms) != 4
+        or not all(isinstance(x, int) and x in (0, 1) for x in rooms)
+        or sum(rooms) == 0
+    ):
+        error_message = {
+            "Type": "ERROR_INVALID_ROOM_FORMAT",
+            "Message": "Invalid rooms format: {rooms}",
+        }
+        print("Fehlerhafte Raumdaten empfangen:", rooms)
+        if ws:
+            ws.send(json.dumps(error_message))
+            print("Fehlermeldung an Server gesendet: ERROR_INVALID_ROOM_FORMAT")
+        return
+
     wait_for_phone_removed(ws)
 
     target_index = None
@@ -86,7 +103,7 @@ def driveToRoom(rooms, ws=None):
             break
 
     if target_index is None:
-        print("Kein Zielraum angegeben – Abbruch.")
+        print("Kein Zielraum angegeben Abbruch.")
         return
 
     print("Ziel: Zimmernummer {} - Roboter soll dort abbiegen.".format(target_index))
@@ -164,6 +181,23 @@ def driveToRoom(rooms, ws=None):
 
 def driveToRoomPhonePlaced(rooms, ws=None):
     global positionRobot
+
+    if (
+        not isinstance(rooms, list)
+        or len(rooms) != 4
+        or not all(isinstance(x, int) and x in (0, 1) for x in rooms)
+        or sum(rooms) == 0
+    ):
+        error_message = {
+            "Type": "ERROR_INVALID_ROOM_FORMAT",
+            "Message": "Invalid rooms format: {rooms}",
+        }
+        print("Fehlerhafte Raumdaten empfangen:", rooms)
+        if ws:
+            ws.send(json.dumps(error_message))
+            print("Fehlermeldung an Server gesendet: ERROR_INVALID_ROOM_FORMAT")
+        return
+
     wait_for_phone_placed(ws)
 
     target_index = None
@@ -173,7 +207,7 @@ def driveToRoomPhonePlaced(rooms, ws=None):
             break
 
     if target_index is None:
-        print("Kein Zielraum angegeben – Abbruch.")
+        print("Kein Zielraum angegeben  Abbruch.")
         return
 
     print("Ziel: Zimmernummer {} - Roboter soll dort abbiegen.".format(target_index))
@@ -418,6 +452,7 @@ def pickupPatientFromWaitingRoom(ws=None):
     print("Hole Patient im Wartezimmer ab")
     waitingRoom = [1, 0, 0, 0]
     driveToRoomPhonePlaced(waitingRoom, ws)
+    wait_for_phone_removed()
 
     if ws is not None:
         message = {"Type": "PICK_PATIENT_ANSWER", "Answer": "TRUE"}
@@ -483,8 +518,8 @@ def main():
     # Startpunkt des Programms
     print("Start")
     # driveToRoom([1, 0, 0, 0])
-    pickupPatientFromWaitingRoom()
-    driveToRoom([0, 1, 0, 0])
+    # pickupPatientFromWaitingRoom()
+    driveToRoom([0, 0, 0, 0])
     # driveToBase()
 
 
