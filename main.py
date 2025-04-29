@@ -40,23 +40,44 @@ POSITION_ROOM3 = "room3"
 positionRobot = POSITION_START
 
 
-def wait_for_phone_removed():
+def wait_for_phone_removed(ws=None, timeout_seconds=5):
     print("Warte darauf, dass das Handy entfernt wird...")
+    waited = 0
     while sensor_touch.is_pressed:
         sleep(0.1)
+        waited += 0.1
+
+        if waited >= timeout_seconds:
+            print("Fehler: Handy wurde nach 5 Sekunden noch nicht entfernt!")
+            if ws is not None:
+                message = {"Type": "ERROR_PHONE_NOT_REMOVED"}
+                ws.send(json.dumps(message))
+                print("Fehler-Nachricht an Server gesendet: ERROR_PHONE_NOT_REMOVED")
+            waited = 0
     print("Handy entfernt. Starte Raumwahl.")
 
 
-def wait_for_phone_placed():
+def wait_for_phone_placed(ws=None, timeout_seconds=5):
     print("Warte darauf, dass das Handy wieder platziert wird...")
+    waited = 0
+
     while not sensor_touch.is_pressed:
         sleep(0.1)
+        waited += 0.1
+
+        if waited >= timeout_seconds:
+            print("Fehler: Handy noch nicht erkannt nach 5 Sekunden!")
+            if ws is not None:
+                message = {"Type": "ERROR_NO_PHONE_DETECTED"}
+                ws.send(json.dumps(message))
+                print("Fehler-Nachricht an Server gesendet: ERROR_NO_PHONE_DETECTED")
+            waited = 0  # **Reset**:
     print("Handy erkannt. Roboter faehrt weiter.")
 
 
 def driveToRoom(rooms, ws=None):
     global positionRobot
-    wait_for_phone_removed()
+    wait_for_phone_removed(ws)
 
     target_index = None
     for i, val in enumerate(rooms):
@@ -72,7 +93,7 @@ def driveToRoom(rooms, ws=None):
     from_waiting_room = positionRobot == POSITION_WAITING
     if from_waiting_room:
         print("Roboter kommt vom Warteraum und faehrt nach links")
-        turn_left_to_rooms(target_index)
+        turn_left_to_rooms(target_index, ws)
         return
 
     green_count = 0
@@ -108,7 +129,11 @@ def driveToRoom(rooms, ws=None):
                         left_speed=-20, right_speed=20, degrees=400
                     )
                     tank_drive.off()
-                    wait_for_phone_placed()
+                    wait_for_phone_placed(ws)
+                    if ws is not None:
+                        message = {"Type": "DRIVE_TO_ROOM_ANSWER", "Answer": "TRUE"}
+                        ws.send(json.dumps(message))
+                        print("DRIVE_TO_ROOM_ANSWER an Server gesendet.")
 
                     print("positionRoboter", positionRobot)
                     print("target_index", target_index)
@@ -137,7 +162,7 @@ def driveToRoom(rooms, ws=None):
     return
 
 
-def turn_left_to_rooms(target_index):
+def turn_left_to_rooms(target_index, ws=None):
     print("Verlasse das Wartezimmer und fahre in den gewaehlten Raum:", target_index)
     # PHASE 1: Erste blaue Platte erkennen und links abbiegen
     while True:
@@ -203,7 +228,7 @@ def turn_left_to_rooms(target_index):
                         left_speed=-20, right_speed=20, degrees=400
                     )
                     tank_drive.off()
-                    wait_for_phone_placed()
+                    wait_for_phone_placed(ws)
                     return
 
                 else:
@@ -279,6 +304,10 @@ def driveToBase():
             tank_drive.off()
             tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=420)
             tank_drive.off()
+            if ws is not None:
+                message = {"Type": "DRIVE_TO_BASE_ANSWER", "Answer": "TRUE"}
+                ws.send(json.dumps(message))
+                print("DRIVE_TO_BASE_ANSWER an Server gesendet.")
             return
 
         elif floor_color == BLACK:
@@ -295,14 +324,19 @@ def driveToBase():
         print("Position zuruckgesetzt auf: ", positionRobot)
 
 
-def pickupPatientFromWaitingRoom():
+def pickupPatientFromWaitingRoom(ws=None):
     # Roboter fährt ins Wartezimmer um Patient abzuholen
     # Prüfen, ob Handy aufgehoben wurde, sonst error Code zurückgeben  „phone_not_removed“
     # success wenn erfolgreich
     print("Hole Patient im Wartezimmer ab")
-    wait_for_phone_removed()
+    wait_for_phone_removed(ws)
     waitingRoom = [1, 0, 0, 0]
-    driveToRoom(waitingRoom)
+    driveToRoom(waitingRoom, ws)
+
+    if ws is not None:
+        message = {"Type": "PICK_PATIENT_ANSWER", "Answer": "TRUE"}
+        ws.send(json.dumps(message))
+        print("PICK_PATIENT_ANSWER an Server gesendet.")
 
 
 def turn_left_90_degrees():
@@ -363,18 +397,9 @@ def main():
     # Startpunkt des Programms
     print("Start")
     # driveToRoom([1, 0, 0, 0])
-    pickupPatientFromWaitingRoom()
+    # pickupPatientFromWaitingRoom()
     driveToRoom([0, 0, 1, 0])
     # driveToBase()
-
-
-if __name__ == "__main__":
-    try:
-        main()
-
-    except KeyboardInterrupt:
-        print("Test beendet.")
-        tank_drive.off()
 
 
 class EV3CommandHandler:
@@ -413,13 +438,13 @@ class EV3CommandHandler:
                 )
 
             elif action == "DRIVE_TO_BASE":
-                driveToBase()
+                driveToBase(self.ws)
                 self.ws.send(
                     json.dumps({"Type": "DRIVE_TO_BASE_ANSWER", "Answer": "TRUE"})
                 )
 
             elif action == "PICK_PATIENT":
-                PickupPatientFromWaitingRoom()
+                PickupPatientFromWaitingRoom(self.ws)
                 self.ws.send(
                     json.dumps({"Type": "PICK_PATIENT_ANSWER", "Answer": "TRUE"})
                 )
@@ -446,6 +471,9 @@ if __name__ == "__main__":
         websocket_url, command_handler.handle_command
     )  # handle_command als Callback
     ws_client.start()
+    
+    try:
+        main()
 
     try:
         while True:
