@@ -162,6 +162,93 @@ def driveToRoom(rooms, ws=None):
     return
 
 
+def driveToRoomPhonePlaced(rooms, ws=None):
+    global positionRobot
+    wait_for_phone_placed(ws)
+
+    target_index = None
+    for i, val in enumerate(rooms):
+        if val == 1:
+            target_index = i + 1  # Zimmernummern starten bei 1
+            break
+
+    if target_index is None:
+        print("Kein Zielraum angegeben – Abbruch.")
+        return
+
+    print("Ziel: Zimmernummer {} - Roboter soll dort abbiegen.".format(target_index))
+    from_waiting_room = positionRobot == POSITION_WAITING
+    if from_waiting_room:
+        print("Roboter kommt vom Warteraum und faehrt nach links")
+        turn_left_to_rooms(target_index, ws)
+        return
+
+    green_count = 0
+
+    while True:
+        result, green_count = follow_line_with_green_count(target_index, green_count)
+
+        if result == TARGET_ROOM_REACHED:
+            print("Ziel erreicht - nach links abbiegen und Linie suchen")
+            turn_left_90_degrees()
+
+            # Folge der Linie bis zur blauen Platte im Raum
+            while True:
+                floor_color = sensor_floor.color
+                right_color_id = sensor_right.value(0)
+                distance = sensor_ir.proximity
+
+                # print(">>> Nach dem Abbiegen - Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
+
+                if distance < 30:
+                    print("Hindernis erkannt - Roboter stoppt.")
+                    tank_drive.off()
+                    while sensor_ir.proximity < 30:
+                        sleep(0.1)
+                    print("Hindernis entfernt - Roboter faehrt weiter.")
+
+                elif right_color_id == BLUE:
+                    print(
+                        "Blaue Platte im Raum erkannt - 180 Grad drehen und auf Handy warten"
+                    )
+                    tank_drive.off()
+                    tank_drive.on_for_degrees(
+                        left_speed=-20, right_speed=20, degrees=400
+                    )
+                    tank_drive.off()
+                    wait_for_phone_placed(ws)
+                    if ws is not None:
+                        message = {"Type": "DRIVE_TO_ROOM_ANSWER", "Answer": "TRUE"}
+                        ws.send(json.dumps(message))
+                        print("DRIVE_TO_ROOM_ANSWER an Server gesendet.")
+
+                    print("positionRoboter", positionRobot)
+                    print("target_index", target_index)
+                    if target_index == 1:
+                        positionRobot = POSITION_WAITING
+                    elif target_index == 2:
+                        positionRobot = POSITION_ROOM1
+                    elif target_index == 3:
+                        positionRobot = POSITION_ROOM2
+                    elif target_index == 4:
+                        positionRobot = POSITION_ROOM3
+                    else:
+                        print("Unbekannter Zielraum Position nicht gesetzt.")
+
+                    print("Position Roboter gesetzt auf:", positionRobot)
+                    return
+                else:
+                    if floor_color == BLACK:
+                        tank_drive.on(left_speed=20, right_speed=25)
+                    elif floor_color == WHITE:
+                        tank_drive.on(left_speed=25, right_speed=20)
+                    else:
+                        tank_drive.on(left_speed=20, right_speed=20)
+                sleep(0.1)
+
+    return
+
+
 def turn_left_to_rooms(target_index, ws=None):
     print("Verlasse das Wartezimmer und fahre in den gewaehlten Raum:", target_index)
     # PHASE 1: Erste blaue Platte erkennen und links abbiegen
@@ -326,12 +413,11 @@ def driveToBase():
 
 def pickupPatientFromWaitingRoom(ws=None):
     # Roboter fährt ins Wartezimmer um Patient abzuholen
-    # Prüfen, ob Handy aufgehoben wurde, sonst error Code zurückgeben  „phone_not_removed“
+    # Prüfen, ob Handy aufliegt, sonst error Code zurückgeben
     # success wenn erfolgreich
     print("Hole Patient im Wartezimmer ab")
-    wait_for_phone_removed(ws)
     waitingRoom = [1, 0, 0, 0]
-    driveToRoom(waitingRoom, ws)
+    driveToRoomPhonePlaced(waitingRoom, ws)
 
     if ws is not None:
         message = {"Type": "PICK_PATIENT_ANSWER", "Answer": "TRUE"}
@@ -397,8 +483,8 @@ def main():
     # Startpunkt des Programms
     print("Start")
     # driveToRoom([1, 0, 0, 0])
-    # pickupPatientFromWaitingRoom()
-    driveToRoom([0, 0, 1, 0])
+    pickupPatientFromWaitingRoom()
+    driveToRoom([0, 1, 0, 0])
     # driveToBase()
 
 
@@ -471,11 +557,9 @@ if __name__ == "__main__":
         websocket_url, command_handler.handle_command
     )  # handle_command als Callback
     ws_client.start()
-    
-    try:
-        main()
 
     try:
+        main()
         while True:
             sleep(1)  # Hauptschleife aktiv halten
     except KeyboardInterrupt:
