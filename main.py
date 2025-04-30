@@ -364,7 +364,7 @@ def turn_left_to_rooms(target_index, ws=None):
                 sleep(0.1)
 
 
-def driveToBase():
+def driveToBase(ws=None):
     """
     Roboter fährt zur Basis zurück:
     - Erkennt erste blaue Platte rechts → 90° rechts drehen
@@ -424,7 +424,7 @@ def driveToBase():
                 "Zweite blaue Platte (rechts) erkannt - Roboter dreht 180 Grad und stoppt"
             )
             tank_drive.off()
-            tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=420)
+            tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=400)
             tank_drive.off()
             if ws is not None:
                 message = {"Type": "DRIVE_TO_BASE_ANSWER", "Answer": "TRUE"}
@@ -520,8 +520,9 @@ def main(ws):
     print("Start")
 
     # pickupPatientFromWaitingRoom()
-    driveToRoom([1, 0, 0, 0], ws)
-    # driveToBase()
+    # driveToRoom([0, 0, 1, 0], ws)
+
+    driveToBase()
 
 
 class EV3CommandHandler:
