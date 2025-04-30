@@ -3,6 +3,7 @@ from ev3dev2.sensor.lego import TouchSensor, ColorSensor, InfraredSensor
 from ev3dev2.sensor import Sensor
 from time import sleep
 from websocket_client import EV3WebSocketClient
+import json
 
 
 # Initialisiere die Sensoren
@@ -514,13 +515,13 @@ def follow_line_with_green_count(target_count, green_seen):
     return CONTINUE_SEARCH, green_seen
 
 
-def main():
+def main(ws):
     # Startpunkt des Programms
     print("Start")
 
     # pickupPatientFromWaitingRoom()
-    driveToRoom([1, 0, 0, 0])
-    driveToBase()
+    driveToRoom([1, 0, 0, 0], ws)
+    # driveToBase()
 
 
 class EV3CommandHandler:
@@ -584,9 +585,7 @@ class EV3CommandHandler:
 
 if __name__ == "__main__":
     # Starte WebSocket-Client
-    websocket_url = (
-        "ws://192.168.2.170:3001"  # Ersetze <SERVER_IP> mit deiner Server-IP
-    )
+    websocket_url = "ws://192.168.2.45:3001"  # Ersetze <SERVER_IP> mit deiner Server-IP
     command_handler = EV3CommandHandler(None)
     ws_client = EV3WebSocketClient(
         websocket_url, command_handler.handle_command
@@ -594,7 +593,7 @@ if __name__ == "__main__":
     ws_client.start()
 
     try:
-        main()
+        main(ws_client)
         while True:
             sleep(1)  # Hauptschleife aktiv halten
     except KeyboardInterrupt:
