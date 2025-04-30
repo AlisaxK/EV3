@@ -50,7 +50,7 @@ def wait_for_phone_removed(ws=None, timeout_seconds=5):
         if waited >= timeout_seconds:
             print("Fehler: Handy wurde nach 5 Sekunden noch nicht entfernt!")
             if ws is not None:
-                message = {"Type": "ERROR_PHONE_NOT_REMOVED"}
+                message = {"message": "ERROR_PHONE_NOT_REMOVED"}
                 ws.send(json.dumps(message))
                 print("Fehler-Nachricht an Server gesendet: ERROR_PHONE_NOT_REMOVED")
             waited = 0
@@ -68,7 +68,7 @@ def wait_for_phone_placed(ws=None, timeout_seconds=5):
         if waited >= timeout_seconds:
             print("Fehler: Handy noch nicht erkannt nach 5 Sekunden!")
             if ws is not None:
-                message = {"Type": "ERROR_NO_PHONE_DETECTED"}
+                message = {"message": "ERROR_NO_PHONE_DETECTED"}
                 ws.send(json.dumps(message))
                 print("Fehler-Nachricht an Server gesendet: ERROR_NO_PHONE_DETECTED")
             waited = 0  # **Reset**:
@@ -86,7 +86,7 @@ def driveToRoom(rooms, ws=None):
     ):
         error_message = {
             "Type": "ERROR_INVALID_ROOM_FORMAT",
-            "Message": "Invalid rooms format: {rooms}",
+            "message": "Invalid rooms format: {rooms}",
         }
         print("Fehlerhafte Raumdaten empfangen:", rooms)
         if ws:
@@ -190,7 +190,7 @@ def driveToRoomPhonePlaced(rooms, ws=None):
     ):
         error_message = {
             "Type": "ERROR_INVALID_ROOM_FORMAT",
-            "Message": "Invalid rooms format: {rooms}",
+            "message": "Invalid rooms format: {rooms}",
         }
         print("Fehlerhafte Raumdaten empfangen:", rooms)
         if ws:
@@ -517,10 +517,10 @@ def follow_line_with_green_count(target_count, green_seen):
 def main():
     # Startpunkt des Programms
     print("Start")
-    # driveToRoom([1, 0, 0, 0])
+
     # pickupPatientFromWaitingRoom()
-    driveToRoom([0, 0, 0, 0])
-    # driveToBase()
+    driveToRoom([1, 0, 0, 0])
+    driveToBase()
 
 
 class EV3CommandHandler:
@@ -534,7 +534,7 @@ class EV3CommandHandler:
             self.ws.send(
                 json.dumps(
                     {
-                        "type": "status",
+                        "Type": "status",
                         "message": "busy",
                         "rejected_command": command.get("Type"),
                     }
