@@ -551,26 +551,12 @@ class EV3CommandHandler:
             if action == "DRIVE_TO_ROOM":
                 rooms = command.get("Target", [0, 0, 0, 0])
                 driveToRoom(rooms, self.ws)  # self.ws übergeben
-                # self.ws.send(
-                #   json.dumps(
-                #      {  # antwort in drive to room verschieben
-                #         "Type": "DRIVE_TO_ROOM_ANSWER",
-                #        "Answer": "TRUE",
-                #   }
-                # )
-                # )
 
             elif action == "DRIVE_TO_BASE":
                 driveToBase(self.ws)
-                # self.ws.send(
-                #   json.dumps({"Type": "DRIVE_TO_BASE_ANSWER", "Answer": "TRUE"})
-                # )
 
             elif action == "PICK_PATIENT":
                 pickupPatientFromWaitingRoom(self.ws)
-                # self.ws.send(
-                #   json.dumps({"Type": "PICK_PATIENT_ANSWER", "Answer": "TRUE"})
-                # )
 
             else:
                 print("Unbekannter Befehl:", action)
