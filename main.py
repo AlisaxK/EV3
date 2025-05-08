@@ -56,6 +56,7 @@ def wait_for_phone_removed(ws=None, timeout_seconds=5):
                 print("Fehler-Nachricht an Server gesendet: ERROR_PHONE_NOT_REMOVED")
             waited = 0
     print("Handy entfernt. Starte Raumwahl.")
+    sleep(5)
 
 
 def wait_for_phone_placed(ws=None, timeout_seconds=5):
@@ -74,6 +75,7 @@ def wait_for_phone_placed(ws=None, timeout_seconds=5):
                 print("Fehler-Nachricht an Server gesendet: ERROR_NO_PHONE_DETECTED")
             waited = 0  # **Reset**:
     print("Handy erkannt. Roboter faehrt weiter.")
+    sleep(5)
 
 
 def driveToRoom(rooms, ws=None):
