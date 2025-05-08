@@ -146,7 +146,7 @@ def driveToRoom(rooms, ws=None):
                     )
                     tank_drive.off()
                     tank_drive.on_for_degrees(
-                        left_speed=-20, right_speed=20, degrees=400
+                        left_speed=-20, right_speed=20, degrees=406
                     )
                     tank_drive.off()
                     wait_for_phone_placed(ws)
@@ -250,7 +250,7 @@ def driveToRoomPhonePlaced(rooms, ws=None):
                     )
                     tank_drive.off()
                     tank_drive.on_for_degrees(
-                        left_speed=-20, right_speed=20, degrees=400
+                        left_speed=-20, right_speed=20, degrees=406
                     )
                     tank_drive.off()
                     wait_for_phone_placed(ws)
@@ -307,7 +307,7 @@ def turn_left_to_rooms(target_index, ws=None):
         elif right_color_id == BLUE:
             print("Erste blaue Platte erkannt - 90 Grad nach links drehen")
             tank_drive.off()
-            tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=200)
+            tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=203)
             tank_drive.off()
             break  # Wechsle zu Phase 2
 
@@ -349,7 +349,7 @@ def turn_left_to_rooms(target_index, ws=None):
                     )
                     tank_drive.off()
                     tank_drive.on_for_degrees(
-                        left_speed=-20, right_speed=20, degrees=400
+                        left_speed=-20, right_speed=20, degrees=406
                     )
                     tank_drive.off()
                     wait_for_phone_placed(ws)
@@ -393,7 +393,7 @@ def driveToBase(ws=None):
         elif right_color_id == BLUE:
             print("Erste blaue Platte erkannt - 90 Grad nach rechts drehen")
             tank_drive.off()
-            tank_drive.on_for_degrees(left_speed=20, right_speed=-20, degrees=200)
+            tank_drive.on_for_degrees(left_speed=20, right_speed=-20, degrees=203)
             tank_drive.off()
             break  # Wechsle zu Phase 2
 
@@ -426,7 +426,7 @@ def driveToBase(ws=None):
                 "Zweite blaue Platte (rechts) erkannt - Roboter dreht 180 Grad und stoppt"
             )
             tank_drive.off()
-            tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=400)
+            tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=406)
             tank_drive.off()
             if ws is not None:
                 message = {"Type": "DRIVE_TO_BASE_ANSWER", "Answer": "TRUE"}
@@ -466,7 +466,7 @@ def pickupPatientFromWaitingRoom(ws=None):
 def turn_left_90_degrees():
     # Dreht den Roboter nach um 90° nach links, bis er wieder Schwarz erkennt
     print("Drehe 90 Grad nach links")
-    tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=200)
+    tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=3)
     tank_drive.off()
 
 
