@@ -551,6 +551,11 @@ class EV3CommandHandler:
         try:
             if action == "DRIVE_TO_ROOM":
                 rooms = command.get("Target", [0, 0, 0, 0])
+                if isinstance(rooms, str):
+                    try:
+                        rooms = json.loads(rooms)
+                    except json.JSONDecodeError:
+                        rooms = []
                 driveToRoom(rooms, self.ws)  # self.ws übergeben
 
             elif action == "DRIVE_TO_BASE":
