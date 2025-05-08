@@ -466,7 +466,7 @@ def pickupPatientFromWaitingRoom(ws=None):
 def turn_left_90_degrees():
     # Dreht den Roboter nach um 90° nach links, bis er wieder Schwarz erkennt
     print("Drehe 90 Grad nach links")
-    tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=3)
+    tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=203)
     tank_drive.off()
 
 
@@ -502,7 +502,7 @@ def follow_line_with_green_count(target_count, green_seen):
             tank_drive.off()
             return TARGET_ROOM_REACHED, green_seen
         else:
-            tank_drive.on_for_seconds(left_speed=15, right_speed=15, seconds=1)
+            tank_drive.on_for_seconds(left_speed=20, right_speed=20, seconds=1)
             return CONTINUE_SEARCH, green_seen
     else:
         last_color_green = False
@@ -521,9 +521,8 @@ def main(ws):
     # Startpunkt des Programms
     print("Start")
 
-    # pickupPatientFromWaitingRoom()
-    # driveToRoom([0, 0, 1, 0], ws)
-
+    #pickupPatientFromWaitingRoom()
+    driveToRoom([0, 1, 0, 0], ws)
     driveToBase()
 
 
