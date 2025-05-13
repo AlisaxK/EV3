@@ -190,11 +190,7 @@ def driveToRoomPhonePlaced(rooms, ws=None):
 
     wait_for_phone_placed(ws)
 
-    target_index = None
-    for i, val in enumerate(rooms):
-        if val == 1:
-            target_index = i + 1  # Zimmernummern starten bei 1
-            break
+    target_index = _get_target_index(rooms)
 
     if target_index is None:
         print("Kein Zielraum angegeben  Abbruch.")
@@ -290,6 +286,14 @@ def _validate_room_list(rooms, ws=None):
             print("Fehlermeldung an Server gesendet: ERROR_INVALID_ROOM_FORMAT")
         return False
     return True
+
+
+def _get_target_index(rooms):
+    for i, val in enumerate(rooms):
+        if val == 1:
+            return i + 1  # Zimmernummern starten bei 1
+    print("Kein Zielraum angegeben  Abbruch.")
+    return None
 
 
 def turn_left_to_rooms(target_index, ws=None):
@@ -528,7 +532,7 @@ def main(ws):
     print("Start")
 
     # pickupPatientFromWaitingRoom()
-    driveToRoom([0, 0, 0, 0], ws)
+    driveToRoom([0, 1, 0, 0], ws)
     driveToBase()
 
 
