@@ -203,6 +203,42 @@ def driveToRoomPhonePlaced(rooms, ws=None):
         turn_left_to_rooms(target_index, ws)
         return
 
+    _navigate_in_target_room(target_index, ws)
+    return
+
+
+def _validate_room_list(rooms, ws=None):
+    print("validate_room_list")
+    if (
+        not isinstance(rooms, list)
+        or len(rooms) != 4
+        or not all(isinstance(x, int) and x in (0, 1) for x in rooms)
+        or sum(rooms) == 0
+    ):
+        error_message = {
+            "Type": "ERROR_INVALID_ROOM_FORMAT",
+            "message": "Invalid rooms format: {rooms}",
+        }
+        print("Fehlerhafte Raumdaten empfangen:", rooms)
+        if ws:
+            ws.send(json.dumps(error_message))
+            print("Fehlermeldung an Server gesendet: ERROR_INVALID_ROOM_FORMAT")
+        return False
+    return True
+
+
+def _get_target_index(rooms):
+    print("get_target_index")
+    for i, val in enumerate(rooms):
+        if val == 1:
+            return i + 1  # Zimmernummern starten bei 1
+    print("Kein Zielraum angegeben  Abbruch.")
+    return None
+
+
+def _navigate_in_target_room(target_index, ws=None):
+    global positionRobot
+    print("navigate_in_target_room")
     green_count = 0
 
     while True:
@@ -265,35 +301,6 @@ def driveToRoomPhonePlaced(rooms, ws=None):
                     else:
                         tank_drive.on(left_speed=20, right_speed=20)
                 sleep(0.1)
-
-    return
-
-
-def _validate_room_list(rooms, ws=None):
-    if (
-        not isinstance(rooms, list)
-        or len(rooms) != 4
-        or not all(isinstance(x, int) and x in (0, 1) for x in rooms)
-        or sum(rooms) == 0
-    ):
-        error_message = {
-            "Type": "ERROR_INVALID_ROOM_FORMAT",
-            "message": "Invalid rooms format: {rooms}",
-        }
-        print("Fehlerhafte Raumdaten empfangen:", rooms)
-        if ws:
-            ws.send(json.dumps(error_message))
-            print("Fehlermeldung an Server gesendet: ERROR_INVALID_ROOM_FORMAT")
-        return False
-    return True
-
-
-def _get_target_index(rooms):
-    for i, val in enumerate(rooms):
-        if val == 1:
-            return i + 1  # Zimmernummern starten bei 1
-    print("Kein Zielraum angegeben  Abbruch.")
-    return None
 
 
 def turn_left_to_rooms(target_index, ws=None):
@@ -532,8 +539,9 @@ def main(ws):
     print("Start")
 
     # pickupPatientFromWaitingRoom()
-    driveToRoom([0, 1, 0, 0], ws)
-    driveToBase()
+    # driveToRoom([0, 1, 0, 0], ws)
+    # driveToBase()
+    pickupPatientFromWaitingRoom(ws=None)
 
 
 class EV3CommandHandler:
