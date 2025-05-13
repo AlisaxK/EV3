@@ -185,20 +185,7 @@ def driveToRoom(rooms, ws=None):
 def driveToRoomPhonePlaced(rooms, ws=None):
     global positionRobot
 
-    if (
-        not isinstance(rooms, list)
-        or len(rooms) != 4
-        or not all(isinstance(x, int) and x in (0, 1) for x in rooms)
-        or sum(rooms) == 0
-    ):
-        error_message = {
-            "Type": "ERROR_INVALID_ROOM_FORMAT",
-            "message": "Invalid rooms format: {rooms}",
-        }
-        print("Fehlerhafte Raumdaten empfangen:", rooms)
-        if ws:
-            ws.send(json.dumps(error_message))
-            print("Fehlermeldung an Server gesendet: ERROR_INVALID_ROOM_FORMAT")
+    if not _validate_room_list(rooms, ws):
         return
 
     wait_for_phone_placed(ws)
@@ -284,6 +271,25 @@ def driveToRoomPhonePlaced(rooms, ws=None):
                 sleep(0.1)
 
     return
+
+
+def _validate_room_list(rooms, ws=None):
+    if (
+        not isinstance(rooms, list)
+        or len(rooms) != 4
+        or not all(isinstance(x, int) and x in (0, 1) for x in rooms)
+        or sum(rooms) == 0
+    ):
+        error_message = {
+            "Type": "ERROR_INVALID_ROOM_FORMAT",
+            "message": "Invalid rooms format: {rooms}",
+        }
+        print("Fehlerhafte Raumdaten empfangen:", rooms)
+        if ws:
+            ws.send(json.dumps(error_message))
+            print("Fehlermeldung an Server gesendet: ERROR_INVALID_ROOM_FORMAT")
+        return False
+    return True
 
 
 def turn_left_to_rooms(target_index, ws=None):
@@ -521,8 +527,8 @@ def main(ws):
     # Startpunkt des Programms
     print("Start")
 
-    #pickupPatientFromWaitingRoom()
-    driveToRoom([0, 1, 0, 0], ws)
+    # pickupPatientFromWaitingRoom()
+    driveToRoom([0, 0, 0, 0], ws)
     driveToBase()
 
 
@@ -578,7 +584,9 @@ class EV3CommandHandler:
 
 if __name__ == "__main__":
     # Starte WebSocket-Client
-    websocket_url = "ws://192.168.2.45:3001"  # Ersetze <SERVER_IP> mit deiner Server-IP
+    websocket_url = (
+        "ws://192.168.2.170:3001"  # Ersetze <SERVER_IP> mit deiner Server-IP
+    )
     command_handler = EV3CommandHandler(None)
     ws_client = EV3WebSocketClient(
         websocket_url, command_handler.handle_command
