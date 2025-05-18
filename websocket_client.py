@@ -20,20 +20,24 @@ class EV3WebSocketClient:
 
     def on_error(self, ws, error):
         print("WebSocket-Fehler:", error)
+        self.reconnect()
 
     def on_close(self, ws, close_status_code, close_msg):
-        print("WebSocket-Verbindung mit Roboter geschlossen")
+        print(
+            "WebSocket-Verbindung mit Roboter geschlossen. Versuche, die Verbindung wiederherzustellen"
+        )
+        self.reconnect()
+
+    def reconnect(self, delay=5):
+        print("Versuche, die Verbindung wiederherzustellen")
+        sleep(delay)
+        self.start()
 
     def on_open(self, ws):
         def delayed_send():
             sleep(1)  # Wichtiger: 1 Sekunde
             try:
                 ws.send("ro")
-                error_message = {
-                    "Type": "ERROR_INVALID_ROOM_FORMAT",
-                    "message": "Invalid rooms format",
-                }
-                ws.send(json.dumps(error_message))
             except Exception as e:
                 print("Fehler beim Senden:", e)
 
