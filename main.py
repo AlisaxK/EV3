@@ -77,6 +77,19 @@ def wait_for_phone_placed(ws=None, timeout_seconds=5):
     print("Handy erkannt. Roboter faehrt weiter.")
     sleep(5)
 
+def check_and_handle_obstacle(threshold=30):
+    '''Überprüft auf Hindernis und pausiert bei Bedarf'''
+    distance = sensor_ir.proximity
+    if distance < threshold:
+        print("Hindernis erkannt - Roboter stoppt.")
+        tank_drive.off()
+        while sensor_ir.proximity < threshold: # Warte bis Hindernis entfernt ist
+            sleep(0.1)
+        print("Hindernis entfernt - Roboter faehrt weiter.")
+        return True # Hindernis behandelt
+    return False # Kein Hindernis oder nicht nah genug
+
+
 
 def driveToRoom(rooms, ws=None):
     global positionRobot
@@ -129,16 +142,13 @@ def driveToRoom(rooms, ws=None):
             while True:
                 floor_color = sensor_floor.color
                 right_color_id = sensor_right.value(0)
-                distance = sensor_ir.proximity
 
                 # print(">>> Nach dem Abbiegen - Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
 
-                if distance < 30:
-                    print("Hindernis erkannt - Roboter stoppt.")
-                    tank_drive.off()
-                    while sensor_ir.proximity < 30:
-                        sleep(0.1)
-                    print("Hindernis entfernt - Roboter faehrt weiter.")
+                if check_and_handle_obstacle():
+                    sleep(0.1)
+                    continue
+
 
                 elif right_color_id == BLUE:
                     print(
@@ -252,16 +262,12 @@ def _navigate_in_target_room(target_index, ws=None):
             while True:
                 floor_color = sensor_floor.color
                 right_color_id = sensor_right.value(0)
-                distance = sensor_ir.proximity
 
                 # print(">>> Nach dem Abbiegen - Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
 
-                if distance < 30:
-                    print("Hindernis erkannt - Roboter stoppt.")
-                    tank_drive.off()
-                    while sensor_ir.proximity < 30:
-                        sleep(0.1)
-                    print("Hindernis entfernt - Roboter faehrt weiter.")
+                if check_and_handle_obstacle():
+                    sleep(0.1)
+                    continue
 
                 elif right_color_id == BLUE:
                     print(
@@ -309,17 +315,12 @@ def turn_left_to_rooms(target_index, ws=None):
     while True:
         floor_color = sensor_floor.color
         right_color_id = sensor_right.value(0)
-        distance = sensor_ir.proximity
 
         # print(">>> Rueckfahrt - Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
 
-        # Hindernisvermeidung
-        if distance < 30:
-            print("Hindernis erkannt - Roboter stoppt.")
-            tank_drive.off()
-            while sensor_ir.proximity < 30:
-                sleep(0.1)
-            print("Hindernis entfernt - Roboter faehrt weiter.")
+        if check_and_handle_obstacle():
+            sleep(0.1)
+            continue
 
         elif right_color_id == BLUE:
             print("Erste blaue Platte erkannt - 90 Grad nach links drehen")
@@ -351,14 +352,10 @@ def turn_left_to_rooms(target_index, ws=None):
             while True:
                 floor_color = sensor_floor.color
                 right_color_id = sensor_right.value(0)
-                distance = sensor_ir.proximity
 
-                if distance < 30:
-                    print("Hindernis erkannt - Roboter stoppt.")
-                    tank_drive.off()
-                    while sensor_ir.proximity < 30:
-                        sleep(0.1)
-                    print("Hindernis entfernt - Roboter faehrt weiter.")
+                if check_and_handle_obstacle():
+                    sleep(0.1)
+                    continue
 
                 elif right_color_id == BLUE:
                     print(
@@ -395,17 +392,13 @@ def driveToBase(ws=None):
     while True:
         floor_color = sensor_floor.color
         right_color_id = sensor_right.value(0)
-        distance = sensor_ir.proximity
 
         # print(">>> Rueckfahrt - Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
 
         # Hindernisvermeidung
-        if distance < 30:
-            print("Hindernis erkannt - Roboter stoppt.")
-            tank_drive.off()
-            while sensor_ir.proximity < 30:
-                sleep(0.1)
-            print("Hindernis entfernt - Roboter faehrt weiter.")
+        if check_and_handle_obstacle():
+            sleep(0.1)
+            continue
 
         elif right_color_id == BLUE:
             print("Erste blaue Platte erkannt - 90 Grad nach rechts drehen")
@@ -427,16 +420,12 @@ def driveToBase(ws=None):
     while True:
         floor_color = sensor_floor.color
         right_color_id = sensor_right.value(0)
-        distance = sensor_ir.proximity
 
         # print(">>> Zielsuche - Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
 
-        if distance < 30:
-            print("Hindernis erkannt - Roboter stoppt.")
-            tank_drive.off()
-            while sensor_ir.proximity < 30:
-                sleep(0.1)
-            print("Hindernis entfernt - Roboter faehrt weiter.")
+        if check_and_handle_obstacle():
+            sleep(0.1)
+            continue
 
         elif right_color_id == BLUE:
             print(
@@ -491,17 +480,10 @@ def follow_line_with_green_count(target_count, green_seen):
     global last_color_green
     floor_color = sensor_floor.color
     right_color_id = sensor_right.value(0)
-    distance = sensor_ir.proximity
 
     # print(">>> Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}, Gruen gezaehlt: {}".format(floor_color, right_color_id, distance, green_seen))
 
-    # Wenn Hindernis erkannt wird, stoppe
-    if distance < 30:
-        print("Hindernis erkannt - Roboter stoppt.")
-        tank_drive.off()
-        while sensor_ir.proximity < 30:
-            sleep(0.1)
-        print("Hindernis entfernt - Roboter faehrt weiter.")
+    if check_and_handle_obstacle():
         return CONTINUE_SEARCH, green_seen
 
     # Nur bei Übergang von Nicht Gruen zu Gruen zählen
