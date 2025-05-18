@@ -4,7 +4,7 @@ from ev3dev2.sensor import Sensor
 from time import sleep
 from websocket_client import EV3WebSocketClient
 import json
-
+from commands import DRIVE_TO_ROOM, DRIVE_TO_BASE, PICK_PATIENT
 
 # Initialisiere die Sensoren
 sensor_touch = TouchSensor()
@@ -567,7 +567,7 @@ class EV3CommandHandler:
         action = command.get("Type")
 
         try:
-            if action == "DRIVE_TO_ROOM":
+            if action == DRIVE_TO_ROOM:
                 rooms = command.get("Target", [0, 0, 0, 0])
                 if isinstance(rooms, str):
                     try:
@@ -576,10 +576,10 @@ class EV3CommandHandler:
                         rooms = []
                 driveToRoom(rooms, self.ws)  # self.ws übergeben
 
-            elif action == "DRIVE_TO_BASE":
+            elif action == DRIVE_TO_BASE:
                 driveToBase(self.ws)
 
-            elif action == "PICK_PATIENT":
+            elif action == PICK_PATIENT:
                 pickupPatientFromWaitingRoom(self.ws)
 
             else:
