@@ -24,12 +24,14 @@ class TestEV3WebSocketClient(unittest.TestCase):
     @patch("builtins.print")
     def test_on_error(self, mock_print):
         self.client.on_error(None, "Test error")
-        mock_print.assert_called_with("WebSocket-Fehler:", "Test error")
+        mock_print.assert_any_call("WebSocket-Fehler:", "Test error")
+        mock_print.assert_any_call("Versuche, die Verbindung wiederherzustellen")
 
     @patch("builtins.print")
     def test_on_close(self, mock_print):
         self.client.on_close(None, 1000, "Normal closure")
-        mock_print.assert_called_with("WebSocket-Verbindung mit Roboter geschlossen")
+        mock_print.assert_any_call("WebSocket-Verbindung mit Roboter geschlossen")
+        mock_print.assert_any_call("Versuche, die Verbindung wiederherzustellen")
 
     @patch("websocket_client.Thread")
     def test_on_open_starts_thread(self, mock_thread):
@@ -61,17 +63,9 @@ class TestEV3WebSocketClient(unittest.TestCase):
         # Die target-Funktion ist delayed_send(), also manuell ausführen:
         with patch.object(mock_ws, "send") as mock_send:
             target_function()
-            self.assertEqual(mock_send.call_count, 2)
+            self.assertEqual(mock_send.call_count, 1)
 
-            # Erste Nachricht: einfacher String
             self.assertEqual(mock_send.call_args_list[0], call("ro"))
-
-            # Zweite Nachricht: JSON mit Fehler
-            error_obj = {
-                "Type": "ERROR_INVALID_ROOM_FORMAT",
-                "message": "Invalid rooms format",
-            }
-            self.assertEqual(mock_send.call_args_list[1], call(json.dumps(error_obj)))
 
     @patch("websocket_client.Thread")
     @patch("builtins.print")

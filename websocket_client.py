@@ -23,9 +23,7 @@ class EV3WebSocketClient:
         self.reconnect()
 
     def on_close(self, ws, close_status_code, close_msg):
-        print(
-            "WebSocket-Verbindung mit Roboter geschlossen. Versuche, die Verbindung wiederherzustellen"
-        )
+        print("WebSocket-Verbindung mit Roboter geschlossen")
         self.reconnect()
 
     def reconnect(self, delay=5):
