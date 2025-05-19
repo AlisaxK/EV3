@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import Mock, patch, call, ANY, MagicMock
 import sys
 
+
 mock_sensor = MagicMock()
 mock_motor = MagicMock()
 
@@ -22,7 +23,8 @@ sys.modules["ev3dev2.sensor"] = sensor_mock
 sys.modules["ev3dev2"] = MagicMock()
 
 
-from main import EV3CommandHandler
+import robot_actions as robot
+from command_handler import EV3CommandHandler
 
 
 class TestEV3CommandHandler(unittest.TestCase):
@@ -30,7 +32,7 @@ class TestEV3CommandHandler(unittest.TestCase):
         self.mock_ws = MagicMock()
         self.handler = EV3CommandHandler(ws=self.mock_ws)
 
-    @patch("main.driveToRoom")
+    @patch("command_handler.driveToRoom")
     def test_handle_drive_to_room_string(self, mock_drive):
         json_string = "[0, 1, 0, 0]"
         command = {"Type": "DRIVE_TO_ROOM", "Target": json_string}
@@ -38,21 +40,21 @@ class TestEV3CommandHandler(unittest.TestCase):
 
         mock_drive.assert_called_once_with([0, 1, 0, 0], self.mock_ws)
 
-    @patch("main.driveToRoom")
+    @patch("command_handler.driveToRoom")
     def test_handle_drive_to_room_array(self, mock_drive):
         command = {"Type": "DRIVE_TO_ROOM", "Target": [0, 0, 1, 0]}
         self.handler.handle_command(command)
 
         mock_drive.assert_called_once_with([0, 0, 1, 0], self.mock_ws)
 
-    @patch("main.driveToBase")
+    @patch("command_handler.driveToBase")
     def test_handle_drive_to_base(self, mock_drive):
         command = {"Type": "DRIVE_TO_BASE"}
         self.handler.handle_command(command)
 
         mock_drive.assert_called_once_with(self.mock_ws)
 
-    @patch("main.pickupPatientFromWaitingRoom")
+    @patch("command_handler.pickupPatientFromWaitingRoom")
     def test_handle_pick_patient(self, mock_pickup):
         command = {"Type": "PICK_PATIENT"}
         self.handler.handle_command(command)
@@ -80,7 +82,7 @@ class TestEV3CommandHandler(unittest.TestCase):
         self.handler.busy = False
 
         # command that triggers exception
-        with patch("main.driveToRoom", side_effect=Exception("Exception!")):
+        with patch("command_handler.driveToRoom", side_effect=Exception("Exception!")):
             command = {"Type": "DRIVE_TO_ROOM", "Target": [1, 0, 0, 0]}
             self.handler.handle_command(command)
 
@@ -88,7 +90,7 @@ class TestEV3CommandHandler(unittest.TestCase):
             '{"Type": "error", "Answer": "Exception!"}'
         )
 
-    @patch("main.driveToRoom")
+    @patch("command_handler.driveToRoom")
     def test_handle_drive_to_room_with_invalid_json_string(self, mock_drive):
         invalid_json = "not a list"
         command = {"Type": "DRIVE_TO_ROOM", "Target": invalid_json}
