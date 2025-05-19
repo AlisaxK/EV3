@@ -31,11 +31,19 @@ class TestEV3CommandHandler(unittest.TestCase):
         self.handler = EV3CommandHandler(ws=self.mock_ws)
 
     @patch("main.driveToRoom")
-    def test_handle_drive_to_room(self, mock_drive):
-        command = {"Type": "DRIVE_TO_ROOM", "Target": [0, 1, 0, 0]}
+    def test_handle_drive_to_room_string(self, mock_drive):
+        json_string = "[0, 1, 0, 0]"
+        command = {"Type": "DRIVE_TO_ROOM", "Target": json_string}
         self.handler.handle_command(command)
 
         mock_drive.assert_called_once_with([0, 1, 0, 0], self.mock_ws)
+
+    @patch("main.driveToRoom")
+    def test_handle_drive_to_room_array(self, mock_drive):
+        command = {"Type": "DRIVE_TO_ROOM", "Target": [0, 0, 1, 0]}
+        self.handler.handle_command(command)
+
+        mock_drive.assert_called_once_with([0, 0, 1, 0], self.mock_ws)
 
     @patch("main.driveToBase")
     def test_handle_drive_to_base(self, mock_drive):
@@ -79,3 +87,11 @@ class TestEV3CommandHandler(unittest.TestCase):
         self.mock_ws.send.assert_called_with(
             '{"Type": "error", "Answer": "Exception!"}'
         )
+
+    @patch("main.driveToRoom")
+    def test_handle_drive_to_room_with_invalid_json_string(self, mock_drive):
+        invalid_json = "not a list"
+        command = {"Type": "DRIVE_TO_ROOM", "Target": invalid_json}
+        self.handler.handle_command(command)
+
+        mock_drive.assert_called_once_with([], self.mock_ws)

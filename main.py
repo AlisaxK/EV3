@@ -77,18 +77,18 @@ def wait_for_phone_placed(ws=None, timeout_seconds=5):
     print("Handy erkannt. Roboter faehrt weiter.")
     sleep(5)
 
+
 def check_and_handle_obstacle(threshold=30):
-    '''Überprüft auf Hindernis und pausiert bei Bedarf'''
+    """Überprüft auf Hindernis und pausiert bei Bedarf"""
     distance = sensor_ir.proximity
     if distance < threshold:
         print("Hindernis erkannt - Roboter stoppt.")
         tank_drive.off()
-        while sensor_ir.proximity < threshold: # Warte bis Hindernis entfernt ist
+        while sensor_ir.proximity < threshold:  # Warte bis Hindernis entfernt ist
             sleep(0.1)
         print("Hindernis entfernt - Roboter faehrt weiter.")
-        return True # Hindernis behandelt
-    return False # Kein Hindernis oder nicht nah genug
-
+        return True  # Hindernis behandelt
+    return False  # Kein Hindernis oder nicht nah genug
 
 
 def driveToRoom(rooms, ws=None):
@@ -148,7 +148,6 @@ def driveToRoom(rooms, ws=None):
                 if check_and_handle_obstacle():
                     sleep(0.1)
                     continue
-
 
                 elif right_color_id == BLUE:
                     print(
@@ -521,9 +520,9 @@ def main(ws):
     print("Start")
 
     # pickupPatientFromWaitingRoom()
-    # driveToRoom([0, 1, 0, 0], ws)
+    driveToRoom([0, 1, 0, 0], ws=None)
     # driveToBase()
-    pickupPatientFromWaitingRoom(ws=None)
+    # pickupPatientFromWaitingRoom(ws=None)
 
 
 class EV3CommandHandler:

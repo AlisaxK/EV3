@@ -70,7 +70,7 @@ class TestPickupPatient(unittest.TestCase):
         # Sicherstellen, dass Endzustand erreicht wurde
         mock_wait_phone.assert_called_once()
         mock_tank_drive.on_for_degrees.assert_any_call(
-            left_speed=-20, right_speed=20, degrees=200
+            left_speed=-20, right_speed=20, degrees=203
         )
 
 
