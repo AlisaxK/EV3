@@ -27,6 +27,15 @@ GREEN = 4
 RED = 5
 THRESHOLD = (BLACK + WHITE) / 2  # Schwellenwert fuer die Linie
 
+# Geschwindigkeitskonstanten
+SPEED_LINE_BLACK_L = 20
+SPEED_LINE_BLACK_R = 25
+SPEED_LINE_WHITE_L = 25
+SPEED_LINE_WHITE_R = 20
+SPEED_LINE_OTHER = 20
+SPEED_TURN = 20
+SPEED_STRAIGHT_SLOW = 20
+
 # Results line following
 TARGET_ROOM_REACHED = "TARGET_ROOM_REACHED"
 CONTINUE_SEARCH = "CONTINUE_SEARCH"
@@ -90,16 +99,16 @@ def check_and_handle_obstacle(threshold=30):
     return False # Kein Hindernis oder nicht nah genug
 
 
-def follow_line_simple(speed_black_left=20, speed_black_right=25, speed_white_left=25, speed_white_right=20, speed_other=20):
+def follow_line_simple(speed_black_left=SPEED_LINE_BLACK_L, speed_black_right=SPEED_LINE_BLACK_R, speed_white_left=SPEED_LINE_WHITE_L, speed_white_right=SPEED_LINE_WHITE_R, speed_other=SPEED_LINE_OTHER):
     """Einfache Linienverfolgung basierend auf der Bodenfarbe."""
     floor_color = sensor_floor.color
     if floor_color == BLACK:
-        tank_drive.on(left_speed=speed_black_left, right_speed=speed_black_right)
+        tank_drive.on(left_speed=SPEED_LINE_BLACK_L, right_speed=SPEED_LINE_BLACK_R)
     elif floor_color == WHITE:
-        tank_drive.on(left_speed=speed_white_left, right_speed=speed_white_right)
+        tank_drive.on(left_speed=SPEED_LINE_WHITE_L, right_speed=SPEED_LINE_WHITE_R)
     else:
         # Bei anderen Farben (z.B. Rand der Linie, oder unerwartete Farbe) geradeaus fahren oder anpassen
-        tank_drive.on(left_speed=speed_other, right_speed=speed_other)
+        tank_drive.on(left_speed=SPEED_LINE_OTHER, right_speed=SPEED_LINE_OTHER)
 
 
 def driveToRoom(rooms, ws=None):
@@ -167,7 +176,7 @@ def driveToRoom(rooms, ws=None):
                     )
                     tank_drive.off()
                     tank_drive.on_for_degrees(
-                        left_speed=-20, right_speed=20, degrees=406
+                        left_speed=-SPEED_TURN, right_speed=SPEED_TURN, degrees=406
                     )
                     tank_drive.off()
                     wait_for_phone_placed(ws)
@@ -281,7 +290,7 @@ def _navigate_in_target_room(target_index, ws=None):
                     )
                     tank_drive.off()
                     tank_drive.on_for_degrees(
-                        left_speed=-20, right_speed=20, degrees=406
+                        left_speed=-SPEED_TURN, right_speed=SPEED_TURN, degrees=406
                     )
                     tank_drive.off()
                     wait_for_phone_placed(ws)
@@ -326,7 +335,7 @@ def turn_left_to_rooms(target_index, ws=None):
         elif right_color_id == BLUE:
             print("Erste blaue Platte erkannt - 90 Grad nach links drehen")
             tank_drive.off()
-            tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=203)
+            tank_drive.on_for_degrees(left_speed=-SPEED_TURN, right_speed=SPEED_TURN, degrees=203)
             tank_drive.off()
             break  # Wechsle zu Phase 2
 
@@ -360,7 +369,7 @@ def turn_left_to_rooms(target_index, ws=None):
                     )
                     tank_drive.off()
                     tank_drive.on_for_degrees(
-                        left_speed=-20, right_speed=20, degrees=406
+                        left_speed=-SPEED_TURN, right_speed=SPEED_TURN, degrees=406
                     )
                     tank_drive.off()
                     wait_for_phone_placed(ws)
@@ -395,7 +404,7 @@ def driveToBase(ws=None):
         elif right_color_id == BLUE:
             print("Erste blaue Platte erkannt - 90 Grad nach rechts drehen")
             tank_drive.off()
-            tank_drive.on_for_degrees(left_speed=20, right_speed=-20, degrees=203)
+            tank_drive.on_for_degrees(left_speed=SPEED_TURN, right_speed=-SPEED_TURN, degrees=203)
             tank_drive.off()
             break  # Wechsle zu Phase 2
 
@@ -420,7 +429,7 @@ def driveToBase(ws=None):
                 "Zweite blaue Platte (rechts) erkannt - Roboter dreht 180 Grad und stoppt"
             )
             tank_drive.off()
-            tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=406)
+            tank_drive.on_for_degrees(left_speed=-SPEED_TURN, right_speed=SPEED_TURN, degrees=406)
             tank_drive.off()
             if ws is not None:
                 message = {"Type": "DRIVE_TO_BASE_ANSWER", "Answer": "TRUE"}
@@ -456,7 +465,7 @@ def pickupPatientFromWaitingRoom(ws=None):
 def turn_left_90_degrees():
     # Dreht den Roboter nach um 90° nach links, bis er wieder Schwarz erkennt
     print("Drehe 90 Grad nach links")
-    tank_drive.on_for_degrees(left_speed=-20, right_speed=20, degrees=203)
+    tank_drive.on_for_degrees(left_speed=-SPEED_TURN, right_speed=SPEED_TURN, degrees=203)
     tank_drive.off()
 
 
@@ -484,7 +493,7 @@ def follow_line_with_green_count(target_count, green_seen):
             tank_drive.off()
             return TARGET_ROOM_REACHED, green_seen
         else:
-            tank_drive.on_for_seconds(left_speed=20, right_speed=20, seconds=1)
+            tank_drive.on_for_seconds(left_speed=SPEED_STRAIGHT_SLOW, right_speed=SPEED_STRAIGHT_SLOW, seconds=1)
             return CONTINUE_SEARCH, green_seen
     else:
         last_color_green = False
