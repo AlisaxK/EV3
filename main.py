@@ -90,6 +90,17 @@ def check_and_handle_obstacle(threshold=30):
         return True  # Hindernis behandelt
     return False  # Kein Hindernis oder nicht nah genug
 
+def follow_line_simple(speed_black_left=20, speed_black_right=25, speed_white_left=25, speed_white_right=20, speed_other=20):
+    """Einfache Linienverfolgung basierend auf der Bodenfarbe."""
+    floor_color = sensor_floor.color
+    if floor_color == BLACK:
+        tank_drive.on(left_speed=speed_black_left, right_speed=speed_black_right)
+    elif floor_color == WHITE:
+        tank_drive.on(left_speed=speed_white_left, right_speed=speed_white_right)
+    else:
+        # Bei anderen Farben (z.B. Rand der Linie, oder unerwartete Farbe) geradeaus fahren oder anpassen
+        tank_drive.on(left_speed=speed_other, right_speed=speed_other)
+
 
 def driveToRoom(rooms, ws=None):
     global positionRobot
@@ -179,13 +190,8 @@ def driveToRoom(rooms, ws=None):
 
                     print("Position Roboter gesetzt auf:", positionRobot)
                     return
-                else:
-                    if floor_color == BLACK:
-                        tank_drive.on(left_speed=20, right_speed=25)
-                    elif floor_color == WHITE:
-                        tank_drive.on(left_speed=25, right_speed=20)
-                    else:
-                        tank_drive.on(left_speed=20, right_speed=20)
+                else: # Linienverfolgung im Raum
+                    follow_line_simple()
                 sleep(0.1)
 
     return
@@ -298,13 +304,8 @@ def _navigate_in_target_room(target_index, ws=None):
 
                     print("Position Roboter gesetzt auf:", positionRobot)
                     return
-                else:
-                    if floor_color == BLACK:
-                        tank_drive.on(left_speed=20, right_speed=25)
-                    elif floor_color == WHITE:
-                        tank_drive.on(left_speed=25, right_speed=20)
-                    else:
-                        tank_drive.on(left_speed=20, right_speed=20)
+                else: # Linienverfolgung im Raum
+                    follow_line_simple()
                 sleep(0.1)
 
 
@@ -328,12 +329,8 @@ def turn_left_to_rooms(target_index, ws=None):
             tank_drive.off()
             break  # Wechsle zu Phase 2
 
-        elif floor_color == BLACK:
-            tank_drive.on(left_speed=20, right_speed=25)
-        elif floor_color == WHITE:
-            tank_drive.on(left_speed=25, right_speed=20)
-        else:
-            tank_drive.on(left_speed=20, right_speed=20)
+        else: # Linienverfolgung
+            follow_line_simple()
 
         sleep(0.1)
 
@@ -368,13 +365,8 @@ def turn_left_to_rooms(target_index, ws=None):
                     wait_for_phone_placed(ws)
                     return
 
-                else:
-                    if floor_color == BLACK:
-                        tank_drive.on(left_speed=20, right_speed=25)
-                    elif floor_color == WHITE:
-                        tank_drive.on(left_speed=25, right_speed=20)
-                    else:
-                        tank_drive.on(left_speed=20, right_speed=20)
+                else: # Linienverfolgung im Raum
+                    follow_line_simple()
 
                 sleep(0.1)
 
@@ -406,12 +398,8 @@ def driveToBase(ws=None):
             tank_drive.off()
             break  # Wechsle zu Phase 2
 
-        elif floor_color == BLACK:
-            tank_drive.on(left_speed=20, right_speed=25)
-        elif floor_color == WHITE:
-            tank_drive.on(left_speed=25, right_speed=20)
-        else:
-            tank_drive.on(left_speed=20, right_speed=20)
+        else: # Linienverfolgung
+            follow_line_simple()
 
         sleep(0.1)
 
@@ -439,12 +427,8 @@ def driveToBase(ws=None):
                 print("DRIVE_TO_BASE_ANSWER an Server gesendet.")
             return
 
-        elif floor_color == BLACK:
-            tank_drive.on(left_speed=20, right_speed=25)
-        elif floor_color == WHITE:
-            tank_drive.on(left_speed=25, right_speed=20)
-        else:
-            tank_drive.on(left_speed=20, right_speed=20)
+        else: # Linienverfolgung
+            follow_line_simple()
 
         sleep(0.1)
 
@@ -477,7 +461,6 @@ def turn_left_90_degrees():
 
 def follow_line_with_green_count(target_count, green_seen):
     global last_color_green
-    floor_color = sensor_floor.color
     right_color_id = sensor_right.value(0)
 
     # print(">>> Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}, Gruen gezaehlt: {}".format(floor_color, right_color_id, distance, green_seen))
@@ -506,12 +489,7 @@ def follow_line_with_green_count(target_count, green_seen):
         last_color_green = False
 
     # Linienverfolgung basierend auf Bodenfarbe
-    if floor_color == BLACK:
-        tank_drive.on(left_speed=20, right_speed=25)
-    elif floor_color == WHITE:
-        tank_drive.on(left_speed=25, right_speed=20)
-    else:
-        tank_drive.on(left_speed=20, right_speed=20)
+    follow_line_simple()
     return CONTINUE_SEARCH, green_seen
 
 
