@@ -32,8 +32,17 @@ class EV3WebSocketClient:
         self.start()
 
     def on_open(self, ws):
+        self.ws = ws  # interne Referenz setzen
+
+        # Übergib die WebSocket-Verbindung an den CommandHandler
+        if hasattr(
+            self.command_callback, "__self__"
+        ):  # prüfen, ob Methode von einer Instanz kommt
+            command_handler_instance = self.command_callback.__self__
+            command_handler_instance.ws = ws
+
         def delayed_send():
-            sleep(1)  # Wichtiger: 1 Sekunde
+            sleep(1)  # Wichtig: 1 Sekunde
             try:
                 ws.send("ro")
             except Exception as e:
