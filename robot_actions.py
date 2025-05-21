@@ -56,7 +56,7 @@ def wait_for_phone_removed(ws=None, timeout_seconds=5):
         waited += 0.1
 
         if waited >= timeout_seconds:
-            print("Fehler: Handy wurde nach 5 Sekunden noch nicht entfernt!")
+            # print("Fehler: Handy wurde nach 5 Sekunden noch nicht entfernt!")
             if ws is not None:
                 message = {"message": "ERROR_PHONE_NOT_REMOVED"}
                 ws.send(json.dumps(message))
@@ -67,7 +67,7 @@ def wait_for_phone_removed(ws=None, timeout_seconds=5):
 
 
 def wait_for_phone_placed(ws=None, timeout_seconds=5):
-    print("Warte darauf, dass das Handy wieder platziert wird...")
+    # print("Warte darauf, dass das Handy wieder platziert wird...")
     waited = 0
 
     while not sensor_touch.is_pressed:
@@ -112,6 +112,8 @@ def follow_line_simple():
 
 def driveToRoom(rooms, ws=None):
     global positionRobot
+    print("driveToRoom")
+    print("positionRobot in driveToRoom", positionRobot)
 
     if (
         not isinstance(rooms, list)
@@ -231,7 +233,7 @@ def driveToRoomPhonePlaced(rooms, ws=None):
 
 
 def _validate_room_list(rooms, ws=None):
-    print("validate_room_list")
+    # print("validate_room_list")
     if (
         not isinstance(rooms, list)
         or len(rooms) != 4
@@ -251,7 +253,7 @@ def _validate_room_list(rooms, ws=None):
 
 
 def _get_target_index(rooms):
-    print("get_target_index")
+    # print("get_target_index")
     for i, val in enumerate(rooms):
         if val == 1:
             return i + 1  # Zimmernummern starten bei 1
@@ -333,7 +335,9 @@ def turn_left_to_rooms(target_index, ws=None):
         elif right_color_id == BLUE:
             print("Erste blaue Platte erkannt - 90 Grad nach links drehen")
             tank_drive.off()
-            tank_drive.on_for_degrees(left_speed=-SPEED_TURN, right_speed=SPEED_TURN, degrees=203)
+            tank_drive.on_for_degrees(
+                left_speed=-SPEED_TURN, right_speed=SPEED_TURN, degrees=203
+            )
             tank_drive.off()
             break  # Wechsle zu Phase 2
 
@@ -402,7 +406,9 @@ def driveToBase(ws=None):
         elif right_color_id == BLUE:
             print("Erste blaue Platte erkannt - 90 Grad nach rechts drehen")
             tank_drive.off()
-            tank_drive.on_for_degrees(left_speed=SPEED_TURN, right_speed=-SPEED_TURN, degrees=203)
+            tank_drive.on_for_degrees(
+                left_speed=SPEED_TURN, right_speed=-SPEED_TURN, degrees=203
+            )
             tank_drive.off()
             break  # Wechsle zu Phase 2
 
@@ -427,7 +433,9 @@ def driveToBase(ws=None):
                 "Zweite blaue Platte (rechts) erkannt - Roboter dreht 180 Grad und stoppt"
             )
             tank_drive.off()
-            tank_drive.on_for_degrees(left_speed=-SPEED_TURN, right_speed=SPEED_TURN, degrees=406)
+            tank_drive.on_for_degrees(
+                left_speed=-SPEED_TURN, right_speed=SPEED_TURN, degrees=406
+            )
             tank_drive.off()
             if ws is not None:
                 message = {"Type": "DRIVE_TO_BASE_ANSWER", "Answer": "TRUE"}
@@ -450,6 +458,7 @@ def pickupPatientFromWaitingRoom(ws=None):
     # Prüfen, ob Handy aufliegt, sonst error Code zurückgeben
     # success wenn erfolgreich
     print("Hole Patient im Wartezimmer ab")
+    global positionRobot
     waitingRoom = [1, 0, 0, 0]
     driveToRoomPhonePlaced(waitingRoom, ws)
     wait_for_phone_removed()
@@ -459,11 +468,16 @@ def pickupPatientFromWaitingRoom(ws=None):
         ws.send(json.dumps(message))
         print("PICK_PATIENT_ANSWER an Server gesendet.")
 
+    positionRobot = POSITION_WAITING
+    print("Position Roboter in pickupPatient gesetzt auf:", positionRobot)
+
 
 def turn_left_90_degrees():
     # Dreht den Roboter nach um 90° nach links, bis er wieder Schwarz erkennt
     print("Drehe 90 Grad nach links")
-    tank_drive.on_for_degrees(left_speed=-SPEED_TURN, right_speed=SPEED_TURN, degrees=203)
+    tank_drive.on_for_degrees(
+        left_speed=-SPEED_TURN, right_speed=SPEED_TURN, degrees=203
+    )
     tank_drive.off()
 
 
@@ -491,7 +505,11 @@ def follow_line_with_green_count(target_count, green_seen):
             tank_drive.off()
             return TARGET_ROOM_REACHED, green_seen
         else:
-            tank_drive.on_for_seconds(left_speed=SPEED_STRAIGHT_SLOW, right_speed=SPEED_STRAIGHT_SLOW, seconds=1)
+            tank_drive.on_for_seconds(
+                left_speed=SPEED_STRAIGHT_SLOW,
+                right_speed=SPEED_STRAIGHT_SLOW,
+                seconds=1,
+            )
             return CONTINUE_SEARCH, green_seen
     else:
         last_color_green = False
