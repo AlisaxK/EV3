@@ -16,9 +16,9 @@ sensor_ir = InfraredSensor(address="in4")  # Infrarot-Sensor vorne
 tank_drive = MoveTank(OUTPUT_A, OUTPUT_D)
 
 # Farbwerte fuer die Linienverfolgung
-BLACK = 0
-WHITE = 1
-YELLOW = 6
+NONE = 0
+BLACK = 1
+WHITE = 6
 PURPLE = 7
 BLUE = 3
 GREEN = 4
@@ -45,6 +45,9 @@ POSITION_ROOM1 = "room1"
 POSITION_ROOM2 = "room2"
 POSITION_ROOM3 = "room3"
 positionRobot = POSITION_START
+
+def color_mode_toggle():
+    sensor_floor.mode = "COL-COLOR"
 
 
 def wait_for_phone_removed(ws=None, timeout_seconds=5):
@@ -100,9 +103,9 @@ def check_and_handle_obstacle(threshold=30):
 def follow_line_simple(floor_color=None):
     """Einfache Linienverfolgung basierend auf der Bodenfarbe."""
     #floor_color = sensor_floor.color
-    if floor_color == BLACK:
+    if floor_color == BLACK or floor_color == NONE:
         tank_drive.on(left_speed=SPEED_LINE_BLACK_L, right_speed=SPEED_LINE_BLACK_R)
-    elif floor_color == WHITE or floor_color == YELLOW:
+    elif floor_color == WHITE
         tank_drive.on(left_speed=SPEED_LINE_WHITE_L, right_speed=SPEED_LINE_WHITE_R)
     else:
         # Bei anderen Farben (z.B. Rand der Linie, oder unerwartete Farbe) geradeaus fahren oder anpassen
@@ -153,6 +156,12 @@ def driveToRoom(rooms, ws=None):
 
     while True:
         floor_color = sensor_floor.color
+        r = sensor_floor.red
+        g = sensor_floor.green
+        b = sensor_floor.blue
+        print("RGB:", r, g, b, floor_color)
+
+
         result, green_count = follow_line_with_green_count(target_index, green_count, floor_color)
 
         if result == TARGET_ROOM_REACHED:
@@ -200,7 +209,6 @@ def driveToRoom(rooms, ws=None):
                     print("Position Roboter gesetzt auf:", positionRobot)
                     return
         else:  # Linienverfolgung im Raum
-            print(floor_color)
             follow_line_simple(floor_color)
         sleep(0.1)
 
