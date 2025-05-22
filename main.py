@@ -12,7 +12,7 @@ def main(ws):
 
     # pickupPatientFromWaitingRoom()
     #robot.pickupPatientFromWaitingRoom(ws=None)
-    robot.driveToRoom([0, 1, 0, 0], ws=None)
+    robot.driveToRoom([1, 0, 0, 0], ws=None)
     # robot.pickupPatientFromWaitingRoom(ws=None)
     robot.driveToBase()
     # pickupPatientFromWaitingRoom(ws=None)
