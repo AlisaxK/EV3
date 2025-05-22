@@ -9,12 +9,13 @@ from command_handler import EV3CommandHandler
 def main(ws):
     # Startpunkt des Programms
     print("Start")
+    robot.color_mode_toggle()
 
     # pickupPatientFromWaitingRoom()
-    #robot.pickupPatientFromWaitingRoom(ws=None)
+    # robot.pickupPatientFromWaitingRoom(ws=None)
     robot.driveToRoom([1, 0, 0, 0], ws=None)
     # robot.pickupPatientFromWaitingRoom(ws=None)
-    robot.driveToBase()
+    # robot.driveToBase()
     # pickupPatientFromWaitingRoom(ws=None)
 
 
