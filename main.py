@@ -11,10 +11,10 @@ def main(ws):
     print("Start")
 
     # pickupPatientFromWaitingRoom()
-    robot.pickupPatientFromWaitingRoom(ws=None)
+    #robot.pickupPatientFromWaitingRoom(ws=None)
     robot.driveToRoom([0, 1, 0, 0], ws=None)
     # robot.pickupPatientFromWaitingRoom(ws=None)
-    # robot.driveToBase()
+    robot.driveToBase()
     # pickupPatientFromWaitingRoom(ws=None)
 
 
