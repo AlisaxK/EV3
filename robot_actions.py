@@ -23,7 +23,6 @@ PURPLE = 7
 BLUE = 3
 GREEN = 4
 RED = 5
-THRESHOLD = (BLACK + WHITE) / 2  # Schwellenwert fuer die Linie
 
 # Geschwindigkeitskonstanten
 SPEED_LINE_BLACK_L = 25
@@ -103,7 +102,7 @@ def follow_line_simple(floor_color=None):
     #floor_color = sensor_floor.color
     if floor_color == BLACK:
         tank_drive.on(left_speed=SPEED_LINE_BLACK_L, right_speed=SPEED_LINE_BLACK_R)
-    elif floor_color == WHITE:
+    elif floor_color == WHITE or floor_color == YELLOW:
         tank_drive.on(left_speed=SPEED_LINE_WHITE_L, right_speed=SPEED_LINE_WHITE_R)
     else:
         # Bei anderen Farben (z.B. Rand der Linie, oder unerwartete Farbe) geradeaus fahren oder anpassen
@@ -508,5 +507,5 @@ def follow_line_with_green_count(target_count, green_seen, floor_color=None):
             return TARGET_ROOM_REACHED, green_seen
     else:
         last_color_green = False
-        
+
     return CONTINUE_SEARCH, green_seen
