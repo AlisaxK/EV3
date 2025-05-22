@@ -23,13 +23,12 @@ PURPLE = 7
 BLUE = 3
 GREEN = 4
 RED = 5
-THRESHOLD = (BLACK + WHITE) / 2  # Schwellenwert fuer die Linie
 
 # Geschwindigkeitskonstanten
-SPEED_LINE_BLACK_L = 20
-SPEED_LINE_BLACK_R = 25
-SPEED_LINE_WHITE_L = 25
-SPEED_LINE_WHITE_R = 20
+SPEED_LINE_BLACK_L = 25
+SPEED_LINE_BLACK_R = 22
+SPEED_LINE_WHITE_L = 22
+SPEED_LINE_WHITE_R = 25
 SPEED_LINE_OTHER = 20
 SPEED_TURN = 20
 SPEED_STRAIGHT_SLOW = 20
@@ -98,12 +97,12 @@ def check_and_handle_obstacle(threshold=30):
     return False  # Kein Hindernis oder nicht nah genug
 
 
-def follow_line_simple():
+def follow_line_simple(floor_color=None):
     """Einfache Linienverfolgung basierend auf der Bodenfarbe."""
-    floor_color = sensor_floor.color
+    #floor_color = sensor_floor.color
     if floor_color == BLACK:
         tank_drive.on(left_speed=SPEED_LINE_BLACK_L, right_speed=SPEED_LINE_BLACK_R)
-    elif floor_color == WHITE:
+    elif floor_color == WHITE or floor_color == YELLOW:
         tank_drive.on(left_speed=SPEED_LINE_WHITE_L, right_speed=SPEED_LINE_WHITE_R)
     else:
         # Bei anderen Farben (z.B. Rand der Linie, oder unerwartete Farbe) geradeaus fahren oder anpassen
@@ -153,7 +152,8 @@ def driveToRoom(rooms, ws=None):
     green_count = 0
 
     while True:
-        result, green_count = follow_line_with_green_count(target_index, green_count)
+        floor_color = sensor_floor.color
+        result, green_count = follow_line_with_green_count(target_index, green_count, floor_color)
 
         if result == TARGET_ROOM_REACHED:
             print("Ziel erreicht - nach links abbiegen und Linie suchen")
@@ -161,7 +161,6 @@ def driveToRoom(rooms, ws=None):
 
             # Folge der Linie bis zur blauen Platte im Raum
             while True:
-                floor_color = sensor_floor.color
                 right_color_id = sensor_right.value(0)
 
                 # print(">>> Nach dem Abbiegen - Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
@@ -200,9 +199,10 @@ def driveToRoom(rooms, ws=None):
 
                     print("Position Roboter gesetzt auf:", positionRobot)
                     return
-                else:  # Linienverfolgung im Raum
-                    follow_line_simple()
-                sleep(0.1)
+        else:  # Linienverfolgung im Raum
+            print(floor_color)
+            follow_line_simple(floor_color)
+        sleep(0.1)
 
     return
 
@@ -350,6 +350,7 @@ def turn_left_to_rooms(target_index, ws=None):
     green_count = 1
 
     while True:
+        floor_color = sensor_floor.color
         result, green_count = follow_line_with_green_count(target_index, green_count)
 
         if result == TARGET_ROOM_REACHED:
@@ -481,7 +482,7 @@ def turn_left_90_degrees():
     tank_drive.off()
 
 
-def follow_line_with_green_count(target_count, green_seen):
+def follow_line_with_green_count(target_count, green_seen, floor_color=None):
     global last_color_green
     right_color_id = sensor_right.value(0)
 
@@ -507,6 +508,4 @@ def follow_line_with_green_count(target_count, green_seen):
     else:
         last_color_green = False
 
-    # Linienverfolgung basierend auf Bodenfarbe
-    follow_line_simple()
     return CONTINUE_SEARCH, green_seen
