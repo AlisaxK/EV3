@@ -504,13 +504,6 @@ def follow_line_with_green_count(target_count, green_seen):
             print("Ziel erreicht. Abbiegen.")
             tank_drive.off()
             return TARGET_ROOM_REACHED, green_seen
-        else:
-            tank_drive.on_for_seconds(
-                left_speed=SPEED_STRAIGHT_SLOW,
-                right_speed=SPEED_STRAIGHT_SLOW,
-                seconds=1,
-            )
-            return CONTINUE_SEARCH, green_seen
     else:
         last_color_green = False
 
