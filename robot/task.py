@@ -71,23 +71,24 @@ def driveToRoom(rooms, ws=None):
         print("Kein Zielraum angegeben Abbruch.")
         return
 
+    green_count = 0
     print("Ziel: Zimmernummer {} - Roboter soll dort abbiegen.".format(target_index))
     from_waiting_room = positionRobot == POSITION_WAITING
     if from_waiting_room:
         print("Roboter kommt vom Warteraum und faehrt nach links")
         turn_left_to_rooms(target_index, ws)
+        green_count += 1
         return
 
-    green_count = 0
 
     while True:
-        floor_color = sensor_floor.color
-        r = sensor_floor.red
+'''     r = sensor_floor.red
         g = sensor_floor.green
-        b = sensor_floor.blue
+        b = sensor_floor.blue'''
         print("RGB:", r, g, b, floor_color)
 
 
+        floor_color = sensor_floor.color
         result, green_count = follow_line_with_green_count(target_index, green_count, floor_color)
 
         if result == TARGET_ROOM_REACHED:
@@ -100,11 +101,7 @@ def driveToRoom(rooms, ws=None):
 
                 # print(">>> Nach dem Abbiegen - Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
 
-                if check_and_handle_obstacle():
-                    sleep(0.1)
-                    continue
-
-                elif right_color_id == BLUE:
+                if right_color_id == BLUE:
                     print(
                         "Blaue Platte im Raum erkannt - 180 Grad drehen und auf Handy warten"
                     )
@@ -134,10 +131,12 @@ def driveToRoom(rooms, ws=None):
 
                     print("Position Roboter gesetzt auf:", positionRobot)
                     return
+        	    else:
+                    follow_line_simple(floor_color)
+
         else:  # Linienverfolgung im Raum
             follow_line_simple(floor_color)
         sleep(0.1)
-
     return
 
 def driveToRoomPhonePlaced(rooms, ws=None):
@@ -173,60 +172,18 @@ def turn_left_to_rooms(target_index, ws=None):
 
         # print(">>> Rueckfahrt - Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
 
-        if check_and_handle_obstacle():
-            sleep(0.1)
-            continue
-
-        elif right_color_id == BLUE:
+        if right_color_id == BLUE:
             print("Erste blaue Platte erkannt - 90 Grad nach links drehen")
             tank_drive.off()
             tank_drive.on_for_degrees(
                 left_speed=-SPEED_TURN, right_speed=SPEED_TURN, degrees=203
             )
             tank_drive.off()
-            break  # Wechsle zu Phase 2
+            return  # Wechsle zu Phase 2
 
         else:  # Linienverfolgung
             follow_line_simple()
-
-        sleep(0.1)
-
-    # PHASE 2: Linie folgen und GRÜNE Platten zählen!
-    green_count = 1
-
-    while True:
-        floor_color = sensor_floor.color
-        result, green_count = follow_line_with_green_count(target_index, green_count)
-
-        if result == TARGET_ROOM_REACHED:
-            print("Ziel erreicht - nach links abbiegen und Linie suchen")
-            turn_left_90_degrees()
-
-            # PHASE 3: Folge der Linie im Raum bis zur blauen Platte
-            while True:
-                floor_color = sensor_floor.color
-                right_color_id = sensor_right.value(0)
-
-                if check_and_handle_obstacle():
-                    sleep(0.1)
-                    continue
-
-                elif right_color_id == BLUE:
-                    print(
-                        "Blaue Platte im Raum erkannt - 180 Grad drehen und auf Handy warten"
-                    )
-                    tank_drive.off()
-                    tank_drive.on_for_degrees(
-                        left_speed=-SPEED_TURN, right_speed=SPEED_TURN, degrees=406
-                    )
-                    tank_drive.off()
-                    wait_for_phone_placed(ws)
-                    return
-
-                else:  # Linienverfolgung im Raum
-                    follow_line_simple()
-
-                sleep(0.1)
+                    
 
 def driveToBase(ws=None):
     """
@@ -242,11 +199,6 @@ def driveToBase(ws=None):
         right_color_id = sensor_right.value(0)
 
         # print(">>> Rueckfahrt - Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
-
-        # Hindernisvermeidung
-        if check_and_handle_obstacle():
-            sleep(0.1)
-            continue
 
         elif right_color_id == BLUE:
             print("Erste blaue Platte erkannt - 90 Grad nach rechts drehen")
@@ -268,10 +220,6 @@ def driveToBase(ws=None):
         right_color_id = sensor_right.value(0)
 
         # print(">>> Zielsuche - Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
-
-        if check_and_handle_obstacle():
-            sleep(0.1)
-            continue
 
         elif right_color_id == BLUE:
             print(

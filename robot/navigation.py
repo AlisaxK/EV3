@@ -1,5 +1,40 @@
-import hardware
 from time import sleep
+from ev3dev2.motor import LargeMotor, OUTPUT_A, OUTPUT_D, MoveTank
+from ev3dev2.sensor.lego import TouchSensor, ColorSensor, InfraredSensor
+from ev3dev2.sensor import Sensor
+
+# Farbwerte fuer die Linienverfolgung
+NONE = 0
+BLACK = 1
+BLUE = 3
+GREEN = 4
+RED = 5
+WHITE = 6
+PURPLE = 7
+
+# Geschwindigkeitskonstanten
+SPEED_LINE_BLACK_L = 25
+SPEED_LINE_BLACK_R = 22
+SPEED_LINE_WHITE_L = 22
+SPEED_LINE_WHITE_R = 25
+SPEED_LINE_OTHER = 20
+SPEED_TURN = 20
+SPEED_STRAIGHT_SLOW = 20
+
+# Abstand Threshold
+THRESHOLD=30
+
+# Initialisiere die Sensoren
+sensor_touch = TouchSensor()
+sensor_floor = ColorSensor(address="in2")# EV3 Color Sensor auf Boden
+sensor_right = Sensor(
+    address="in3", driver_name="ht-nxt-color"
+)  # HiTechnic Sensor nach rechts
+sensor_ir = InfraredSensor(address="in4")  # Infrarot-Sensor vorne
+
+# Initialisiere die Motoren
+tank_drive = MoveTank(OUTPUT_A, OUTPUT_D)
+sensor_floor.mode = "COL-COLOR"
 
 
 # Results line following
@@ -15,25 +50,25 @@ POSITION_ROOM2 = "room2"
 POSITION_ROOM3 = "room3"
 positionRobot = POSITION_START
 
-def check_and_handle_obstacle(threshold=30):
+def check_and_handle_obstacle(threshold = THRESHOLD):
     """Überprüft auf Hindernis und pausiert bei Bedarf"""
     distance = sensor_ir.proximity
     if distance < threshold:
         print("Hindernis erkannt - Roboter stoppt.")
         tank_drive.off()
         while sensor_ir.proximity < threshold:  # Warte bis Hindernis entfernt ist
-            sleep(0.1)
+            sleep(0.5)
         print("Hindernis entfernt - Roboter faehrt weiter.")
-        return True  # Hindernis behandelt
-    return False  # Kein Hindernis oder nicht nah genug
+    return
 
 
 def follow_line_simple(floor_color=None):
     """Einfache Linienverfolgung basierend auf der Bodenfarbe."""
-    #floor_color = sensor_floor.color
+    check_and_handle_obstacle()
+
     if floor_color == BLACK or floor_color == NONE:
         tank_drive.on(left_speed=SPEED_LINE_BLACK_L, right_speed=SPEED_LINE_BLACK_R)
-    elif floor_color == WHITE
+    elif floor_color == WHITE:
         tank_drive.on(left_speed=SPEED_LINE_WHITE_L, right_speed=SPEED_LINE_WHITE_R)
     else:
         # Bei anderen Farben (z.B. Rand der Linie, oder unerwartete Farbe) geradeaus fahren oder anpassen
@@ -110,9 +145,6 @@ def follow_line_with_green_count(target_count, green_seen, floor_color=None):
     right_color_id = sensor_right.value(0)
 
     # print(">>> Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}, Gruen gezaehlt: {}".format(floor_color, right_color_id, distance, green_seen))
-
-    if check_and_handle_obstacle():
-        return CONTINUE_SEARCH, green_seen
 
     # Nur bei Übergang von Nicht Gruen zu Gruen zählen
     if right_color_id == GREEN:

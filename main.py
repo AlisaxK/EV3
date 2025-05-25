@@ -1,22 +1,20 @@
 from time import sleep
-from websocket_client import EV3WebSocketClient
+from ws_robot.websocket_client import EV3WebSocketClient
 import json
-from commands import DRIVE_TO_ROOM, DRIVE_TO_BASE, PICK_PATIENT
-import robot_actions as robot
-import hardware
-import navigation
-import task
-from command_handler import EV3CommandHandler
+from ws_robot.commands import DRIVE_TO_ROOM, DRIVE_TO_BASE, PICK_PATIENT
+import robot.hardware
+import robot.navigation
+import robot.task
+from ws_robot.websocket_hanlder import EV3CommandHandler
 
 
 def main(ws):
     # Startpunkt des Programms
     print("Start")
-    robot.color_mode_toggle()
 
     # pickupPatientFromWaitingRoom()
     # robot.pickupPatientFromWaitingRoom(ws=None)
-    robot.driveToRoom([1, 0, 0, 0], ws=None)
+    task.driveToRoom([0, 1, 0, 0], ws=None)
     # robot.pickupPatientFromWaitingRoom(ws=None)
     # robot.driveToBase()
     # pickupPatientFromWaitingRoom(ws=None)
