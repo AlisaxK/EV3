@@ -1,11 +1,11 @@
 from robot.navigation import *
-#import robot.hardware as hardware
+from robot.hardware import ev3_hardware, ColorValues
 
 
 def wait_for_phone_removed(ws=None, timeout_seconds=5):
     print("Warte darauf, dass das Handy entfernt wird...")
     waited = 0
-    while sensor_touch.is_pressed:
+    while ev3_hardware.sensor_touch.is_pressed:
         sleep(0.1)
         waited += 0.1
 
@@ -23,7 +23,7 @@ def wait_for_phone_placed(ws=None, timeout_seconds=5):
     # print("Warte darauf, dass das Handy wieder platziert wird...")
     waited = 0
 
-    while not sensor_touch.is_pressed:
+    while not ev3_hardware.sensor_touch.is_pressed:
         sleep(0.1)
         waited += 0.1
 
@@ -84,7 +84,7 @@ def driveToRoom(rooms, ws=None):
 
 
     while True:
-        floor_color = sensor_floor.color
+        floor_color = ev3_hardware.sensor_floor.color
         result, green_count = follow_line_with_green_count(target_index, green_count, floor_color)
 
         if result == TARGET_ROOM_REACHED:
@@ -118,10 +118,10 @@ def turn_left_to_rooms(target_index, ws=None):
     print("Verlasse das Wartezimmer und fahre in den gewaehlten Raum:", target_index)
     # PHASE 1: Erste blaue Platte erkennen und links abbiegen
     while True:
-        floor_color = sensor_floor.color
-        right_color_id = sensor_right.value(0)
+        floor_color = ev3_hardware.sensor_floor.color
+        right_color_id = ev3_hardware.sensor_right.value(0)
 
-        if right_color_id == BLUE:
+        if right_color_id == ColorValues.BLUE:
             turn_left_90_degrees()
             return  # Wechsle zu Phase 2
 
@@ -139,11 +139,11 @@ def driveToBase(ws=None):
 
     # PHASE 1: Erste blaue Platte erkennen und rechts abbiegen
     while True:
-        floor_color = sensor_floor.color
-        right_color_id = sensor_right.value(0)
+        floor_color = ev3_hardware.sensor_floor.color
+        right_color_id = ev3_hardware.sensor_right.value(0)
 
 
-        if right_color_id == BLUE:
+        if right_color_id == ColorValues.BLUE:
             turn_right_90_degrees()
             break  # Wechsle zu Phase 2
 
@@ -152,10 +152,10 @@ def driveToBase(ws=None):
 
     # PHASE 2: Zweite blaue Platte erkennen und 180° drehen
     while True:
-        floor_color = sensor_floor.color
-        right_color_id = sensor_right.value(0)
+        floor_color = ev3_hardware.sensor_floor.color
+        right_color_id = ev3_hardware.sensor_right.value(0)
 
-        if right_color_id == BLUE:
+        if right_color_id == ColorValues.BLUE:
             turn_180_degrees()
             if ws is not None:
                 message = {"Type": "DRIVE_TO_BASE_ANSWER", "Answer": "TRUE"}

@@ -2,7 +2,7 @@ from time import sleep
 from ws_robot.websocket_client import EV3WebSocketClient
 import json
 from ws_robot.commands import DRIVE_TO_ROOM, DRIVE_TO_BASE, PICK_PATIENT
-import robot.hardware as hardware
+from robot.hardware import ev3_hardware
 import robot.navigation as navigation
 import robot.task as task
 from ws_robot.websocket_handler import EV3CommandHandler
@@ -32,5 +32,5 @@ if __name__ == "__main__":
         while True:
             sleep(1)  # Hauptschleife aktiv halten
     except KeyboardInterrupt:
-        hardware.tank_drive.off()
+        ev3_hardware.tank_drive.off()
         print("Roboter beendet.")

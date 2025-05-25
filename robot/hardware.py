@@ -2,35 +2,47 @@ from ev3dev2.motor import LargeMotor, OUTPUT_A, OUTPUT_D, MoveTank
 from ev3dev2.sensor.lego import TouchSensor, ColorSensor, InfraredSensor
 from ev3dev2.sensor import Sensor
 
-# Farbwerte fuer die Linienverfolgung
-NONE = 0
-BLACK = 1
-BLUE = 3
-GREEN = 4
-RED = 5
-WHITE = 6
-PURPLE = 7
+# Direkter Zugriff auf Konstanten über Klassenname, z.B. ColorValues.BLACK
+# Zugriff auf Hardware-Komponenten über ev3_hardware Instanz, z.B. ev3_hardware.sensor_touch
+
+# Farbwerte
+class ColorValues:
+    NONE = 0
+    BLACK = 1
+    BLUE = 3
+    GREEN = 4
+    RED = 5
+    WHITE = 6
+    PURPLE = 7
 
 # Geschwindigkeitskonstanten
-SPEED_LINE_BLACK_L = 25
-SPEED_LINE_BLACK_R = 22
-SPEED_LINE_WHITE_L = 22
-SPEED_LINE_WHITE_R = 25
-SPEED_LINE_OTHER = 20
-SPEED_TURN = 20
-SPEED_STRAIGHT_SLOW = 20
+class SpeedConstants:
+    LINE_BLACK_L = 25
+    LINE_BLACK_R = 22
+    LINE_WHITE_L = 22
+    LINE_WHITE_R = 25
+    LINE_OTHER = 20
+    TURN = 20
+    STRAIGHT_SLOW = 20
 
 # Abstand Threshold
-THRESHOLD=30
+THRESHOLD = 30
 
-# Initialisiere die Sensoren
-sensor_touch = TouchSensor()
-sensor_floor = ColorSensor(address="in2")# EV3 Color Sensor auf Boden
-sensor_right = Sensor(
-    address="in3", driver_name="ht-nxt-color"
-)  # HiTechnic Sensor nach rechts
-sensor_ir = InfraredSensor(address="in4")  # Infrarot-Sensor vorne
+class EV3Hardware:
+    def __init__(self):
+        # Initialisiere die Sensoren
+        self.sensor_touch = TouchSensor()
+        self.sensor_floor = ColorSensor(address="in2")  # EV3 Color Sensor auf Boden
+        self.sensor_right = Sensor(
+            address="in3", driver_name="ht-nxt-color"
+        )  # HiTechnic Sensor nach rechts
+        self.sensor_ir = InfraredSensor(address="in4")  # Infrarot-Sensor vorne
 
-# Initialisiere die Motoren
-tank_drive = MoveTank(OUTPUT_A, OUTPUT_D)
-sensor_floor.mode = "COL-COLOR"
+        # Initialisiere die Motoren
+        self.tank_drive = MoveTank(OUTPUT_A, OUTPUT_D)
+        
+        # Setze den Modus fuer den Bodensensor
+        self.sensor_floor.mode = ColorSensor.MODE_COL_COLOR
+
+# Globale Instanz der Hardware-Klasse
+ev3_hardware = EV3Hardware()
