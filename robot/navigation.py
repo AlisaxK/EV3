@@ -1,41 +1,5 @@
 from time import sleep
-from ev3dev2.motor import LargeMotor, OUTPUT_A, OUTPUT_D, MoveTank
-from ev3dev2.sensor.lego import TouchSensor, ColorSensor, InfraredSensor
-from ev3dev2.sensor import Sensor
-
-# Farbwerte fuer die Linienverfolgung
-NONE = 0
-BLACK = 1
-BLUE = 3
-GREEN = 4
-RED = 5
-WHITE = 6
-PURPLE = 7
-
-# Geschwindigkeitskonstanten
-SPEED_LINE_BLACK_L = 25
-SPEED_LINE_BLACK_R = 22
-SPEED_LINE_WHITE_L = 22
-SPEED_LINE_WHITE_R = 25
-SPEED_LINE_OTHER = 20
-SPEED_TURN = 20
-SPEED_STRAIGHT_SLOW = 20
-
-# Abstand Threshold
-THRESHOLD=30
-
-# Initialisiere die Sensoren
-sensor_touch = TouchSensor()
-sensor_floor = ColorSensor(address="in2")# EV3 Color Sensor auf Boden
-sensor_right = Sensor(
-    address="in3", driver_name="ht-nxt-color"
-)  # HiTechnic Sensor nach rechts
-sensor_ir = InfraredSensor(address="in4")  # Infrarot-Sensor vorne
-
-# Initialisiere die Motoren
-tank_drive = MoveTank(OUTPUT_A, OUTPUT_D)
-sensor_floor.mode = "COL-COLOR"
-
+from robot.hardware import *
 
 # Results line following
 TARGET_ROOM_REACHED = "TARGET_ROOM_REACHED"
@@ -144,8 +108,6 @@ def follow_line_with_green_count(target_count, green_seen, floor_color=None):
     global last_color_green
     right_color_id = sensor_right.value(0)
 
-    # print(">>> Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}, Gruen gezaehlt: {}".format(floor_color, right_color_id, distance, green_seen))
-
     # Nur bei Übergang von Nicht Gruen zu Gruen zählen
     if right_color_id == GREEN:
         if not last_color_green:
@@ -164,3 +126,45 @@ def follow_line_with_green_count(target_count, green_seen, floor_color=None):
         last_color_green = False
 
     return CONTINUE_SEARCH, green_seen
+
+def turn_into_room():
+    print("Ziel erreicht - nach links abbiegen und Linie suchen")
+    turn_left_90_degrees()
+
+    # Folge der Linie bis zur blauen Platte im Raum
+    while True:
+        floor_color = sensor_floor.color
+        right_color_id = sensor_right.value(0)
+
+        if right_color_id == BLUE:
+            turn_180_degrees()
+            return
+        else:
+            follow_line_simple(floor_color)
+
+def turn_180_degrees():
+    print(
+        "Blaue Platte erkannt - 180 Grad drehen"
+    )
+    tank_drive.off()
+    tank_drive.on_for_degrees(
+        left_speed=-SPEED_TURN, right_speed=SPEED_TURN, degrees=406
+    )
+    tank_drive.off()
+    return
+
+def turn_left_90_degrees():
+    # Dreht den Roboter nach um 90° nach links, bis er wieder Schwarz erkennt
+    print("Drehe 90 Grad nach links")
+    tank_drive.on_for_degrees(
+        left_speed=-SPEED_TURN, right_speed=SPEED_TURN, degrees=203
+    )
+    tank_drive.off()
+
+def turn_right_90_degrees():
+    # Dreht den Roboter nach um 90° nach links, bis er wieder Schwarz erkennt
+    print("Drehe 90 Grad nach rechts")
+    tank_drive.on_for_degrees(
+        left_speed=SPEED_TURN, right_speed=-SPEED_TURN, degrees=203
+    )
+    tank_drive.off()

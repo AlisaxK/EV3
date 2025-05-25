@@ -1,5 +1,5 @@
-import navigation
-import hardware
+from robot.navigation import *
+#import robot.hardware as hardware
 
 
 def wait_for_phone_removed(ws=None, timeout_seconds=5):
@@ -59,7 +59,10 @@ def driveToRoom(rooms, ws=None):
             print("Fehlermeldung an Server gesendet: ERROR_INVALID_ROOM_FORMAT")
         return
 
-    wait_for_phone_removed(ws)
+    if rooms[0] == 1:
+        wait_for_phone_placed(ws)
+    else:
+        wait_for_phone_removed(ws)
 
     target_index = None
     for i, val in enumerate(rooms):
@@ -72,117 +75,58 @@ def driveToRoom(rooms, ws=None):
         return
 
     green_count = 0
+
     print("Ziel: Zimmernummer {} - Roboter soll dort abbiegen.".format(target_index))
     from_waiting_room = positionRobot == POSITION_WAITING
     if from_waiting_room:
         print("Roboter kommt vom Warteraum und faehrt nach links")
         turn_left_to_rooms(target_index, ws)
-        green_count += 1
-        return
 
 
     while True:
-'''     r = sensor_floor.red
-        g = sensor_floor.green
-        b = sensor_floor.blue'''
-        print("RGB:", r, g, b, floor_color)
-
-
         floor_color = sensor_floor.color
         result, green_count = follow_line_with_green_count(target_index, green_count, floor_color)
 
         if result == TARGET_ROOM_REACHED:
-            print("Ziel erreicht - nach links abbiegen und Linie suchen")
-            turn_left_90_degrees()
+            turn_into_room()
+            wait_for_phone_placed(ws)
+            if ws is not None:
+                message = {"Type": "DRIVE_TO_ROOM_ANSWER", "Answer": "TRUE"}
+                ws.send(json.dumps(message))
+                print("DRIVE_TO_ROOM_ANSWER an Server gesendet.")
 
-            # Folge der Linie bis zur blauen Platte im Raum
-            while True:
-                right_color_id = sensor_right.value(0)
+            print("positionRoboter", positionRobot)
+            print("target_index", target_index)
+            if target_index == 1:
+                positionRobot = POSITION_WAITING
+            elif target_index == 2:
+                positionRobot = POSITION_ROOM1
+            elif target_index == 3:
+                positionRobot = POSITION_ROOM2
+            elif target_index == 4:
+                positionRobot = POSITION_ROOM3
+            else:
+                print("Unbekannter Zielraum Position nicht gesetzt.")
 
-                # print(">>> Nach dem Abbiegen - Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
-
-                if right_color_id == BLUE:
-                    print(
-                        "Blaue Platte im Raum erkannt - 180 Grad drehen und auf Handy warten"
-                    )
-                    tank_drive.off()
-                    tank_drive.on_for_degrees(
-                        left_speed=-SPEED_TURN, right_speed=SPEED_TURN, degrees=406
-                    )
-                    tank_drive.off()
-                    wait_for_phone_placed(ws)
-                    if ws is not None:
-                        message = {"Type": "DRIVE_TO_ROOM_ANSWER", "Answer": "TRUE"}
-                        ws.send(json.dumps(message))
-                        print("DRIVE_TO_ROOM_ANSWER an Server gesendet.")
-
-                    print("positionRoboter", positionRobot)
-                    print("target_index", target_index)
-                    if target_index == 1:
-                        positionRobot = POSITION_WAITING
-                    elif target_index == 2:
-                        positionRobot = POSITION_ROOM1
-                    elif target_index == 3:
-                        positionRobot = POSITION_ROOM2
-                    elif target_index == 4:
-                        positionRobot = POSITION_ROOM3
-                    else:
-                        print("Unbekannter Zielraum Position nicht gesetzt.")
-
-                    print("Position Roboter gesetzt auf:", positionRobot)
-                    return
-        	    else:
-                    follow_line_simple(floor_color)
+            print("Position Roboter gesetzt auf:", positionRobot)
+            return
 
         else:  # Linienverfolgung im Raum
             follow_line_simple(floor_color)
-        sleep(0.1)
-    return
 
-def driveToRoomPhonePlaced(rooms, ws=None):
-    global positionRobot
-
-    if not _validate_room_list(rooms, ws):
-        return
-
-    wait_for_phone_placed(ws)
-
-    target_index = _get_target_index(rooms)
-
-    if target_index is None:
-        print("Kein Zielraum angegeben  Abbruch.")
-        return
-
-    print("Ziel: Zimmernummer {} - Roboter soll dort abbiegen.".format(target_index))
-    from_waiting_room = positionRobot == POSITION_WAITING
-    if from_waiting_room:
-        print("Roboter kommt vom Warteraum und faehrt nach links")
-        turn_left_to_rooms(target_index, ws)
-        return
-
-    _navigate_in_target_room(target_index, ws)
-    return
-
-def turn_left_to_rooms(target_index, ws=None):
+def turn_left_to_rooms(target_index, ws=None): 
     print("Verlasse das Wartezimmer und fahre in den gewaehlten Raum:", target_index)
     # PHASE 1: Erste blaue Platte erkennen und links abbiegen
     while True:
         floor_color = sensor_floor.color
         right_color_id = sensor_right.value(0)
 
-        # print(">>> Rueckfahrt - Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
-
         if right_color_id == BLUE:
-            print("Erste blaue Platte erkannt - 90 Grad nach links drehen")
-            tank_drive.off()
-            tank_drive.on_for_degrees(
-                left_speed=-SPEED_TURN, right_speed=SPEED_TURN, degrees=203
-            )
-            tank_drive.off()
+            turn_left_90_degrees()
             return  # Wechsle zu Phase 2
 
         else:  # Linienverfolgung
-            follow_line_simple()
+            follow_line_simple(floor_color)
                     
 
 def driveToBase(ws=None):
@@ -198,52 +142,34 @@ def driveToBase(ws=None):
         floor_color = sensor_floor.color
         right_color_id = sensor_right.value(0)
 
-        # print(">>> Rueckfahrt - Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
 
-        elif right_color_id == BLUE:
-            print("Erste blaue Platte erkannt - 90 Grad nach rechts drehen")
-            tank_drive.off()
-            tank_drive.on_for_degrees(
-                left_speed=SPEED_TURN, right_speed=-SPEED_TURN, degrees=203
-            )
-            tank_drive.off()
+        if right_color_id == BLUE:
+            turn_right_90_degrees()
             break  # Wechsle zu Phase 2
 
         else:  # Linienverfolgung
-            follow_line_simple()
-
-        sleep(0.1)
+            follow_line_simple(floor_color)
 
     # PHASE 2: Zweite blaue Platte erkennen und 180° drehen
     while True:
         floor_color = sensor_floor.color
         right_color_id = sensor_right.value(0)
 
-        # print(">>> Zielsuche - Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
-
-        elif right_color_id == BLUE:
-            print(
-                "Zweite blaue Platte (rechts) erkannt - Roboter dreht 180 Grad und stoppt"
-            )
-            tank_drive.off()
-            tank_drive.on_for_degrees(
-                left_speed=-SPEED_TURN, right_speed=SPEED_TURN, degrees=406
-            )
-            tank_drive.off()
+        if right_color_id == BLUE:
+            turn_180_degrees()
             if ws is not None:
                 message = {"Type": "DRIVE_TO_BASE_ANSWER", "Answer": "TRUE"}
                 ws.send(json.dumps(message))
                 print("DRIVE_TO_BASE_ANSWER an Server gesendet.")
-            return
+
+            return  
 
         else:  # Linienverfolgung
-            follow_line_simple()
+            follow_line_simple(floor_color)
 
-        sleep(0.1)
-
-        global positionRobot
-        positionRobot = POSITION_START
-        print("Position zuruckgesetzt auf: ", positionRobot)
+    global positionRobot
+    positionRobot = POSITION_START
+    print("Position zuruckgesetzt auf: ", positionRobot)
 
 def pickupPatientFromWaitingRoom(ws=None):
     # Roboter fährt ins Wartezimmer um Patient abzuholen
@@ -252,9 +178,8 @@ def pickupPatientFromWaitingRoom(ws=None):
     print("Hole Patient im Wartezimmer ab")
     global positionRobot
     waitingRoom = [1, 0, 0, 0]
-    driveToRoomPhonePlaced(waitingRoom, ws)
-    wait_for_phone_removed()
-
+    driveToRoom(waitingRoom)
+    
     if ws is not None:
         message = {"Type": "PICK_PATIENT_ANSWER", "Answer": "TRUE"}
         ws.send(json.dumps(message))
@@ -262,12 +187,3 @@ def pickupPatientFromWaitingRoom(ws=None):
 
     positionRobot = POSITION_WAITING
     print("Position Roboter in pickupPatient gesetzt auf:", positionRobot)
-
-
-def turn_left_90_degrees():
-    # Dreht den Roboter nach um 90° nach links, bis er wieder Schwarz erkennt
-    print("Drehe 90 Grad nach links")
-    tank_drive.on_for_degrees(
-        left_speed=-SPEED_TURN, right_speed=SPEED_TURN, degrees=203
-    )
-    tank_drive.off()

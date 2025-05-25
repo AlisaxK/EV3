@@ -1,6 +1,6 @@
 import json
-from commands import DRIVE_TO_ROOM, DRIVE_TO_BASE, PICK_PATIENT
-from EV3.robot.task import driveToRoom, driveToBase, pickupPatientFromWaitingRoom
+from ws_robot.commands import DRIVE_TO_ROOM, DRIVE_TO_BASE, PICK_PATIENT
+from robot.task import driveToRoom, driveToBase, pickupPatientFromWaitingRoom
 
 
 class EV3CommandHandler:

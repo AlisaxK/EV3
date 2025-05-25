@@ -2,23 +2,19 @@ from time import sleep
 from ws_robot.websocket_client import EV3WebSocketClient
 import json
 from ws_robot.commands import DRIVE_TO_ROOM, DRIVE_TO_BASE, PICK_PATIENT
-import robot.hardware
-import robot.navigation
-import robot.task
-from ws_robot.websocket_hanlder import EV3CommandHandler
+import robot.hardware as hardware
+import robot.navigation as navigation
+import robot.task as task
+from ws_robot.websocket_handler import EV3CommandHandler
 
 
 def main(ws):
     # Startpunkt des Programms
     print("Start")
 
-    # pickupPatientFromWaitingRoom()
-    # robot.pickupPatientFromWaitingRoom(ws=None)
+    task.pickupPatientFromWaitingRoom(ws=None)
     task.driveToRoom([0, 1, 0, 0], ws=None)
-    # robot.pickupPatientFromWaitingRoom(ws=None)
-    # robot.driveToBase()
-    # pickupPatientFromWaitingRoom(ws=None)
-
+    task.driveToBase()
 
 if __name__ == "__main__":
     # Starte WebSocket-Client
@@ -36,5 +32,5 @@ if __name__ == "__main__":
         while True:
             sleep(1)  # Hauptschleife aktiv halten
     except KeyboardInterrupt:
-        robot.tank_drive.off()
+        hardware.tank_drive.off()
         print("Roboter beendet.")
