@@ -3,6 +3,9 @@ from websocket_client import EV3WebSocketClient
 import json
 from commands import DRIVE_TO_ROOM, DRIVE_TO_BASE, PICK_PATIENT
 import robot_actions as robot
+import hardware
+import navigation
+import task
 from command_handler import EV3CommandHandler
 
 

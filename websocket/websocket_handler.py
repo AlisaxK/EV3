@@ -1,6 +1,6 @@
 import json
 from commands import DRIVE_TO_ROOM, DRIVE_TO_BASE, PICK_PATIENT
-from robot_actions import driveToRoom, driveToBase, pickupPatientFromWaitingRoom
+from EV3.robot.task import driveToRoom, driveToBase, pickupPatientFromWaitingRoom
 
 
 class EV3CommandHandler:
@@ -51,3 +51,24 @@ class EV3CommandHandler:
 
         finally:
             self.busy = False
+
+def _validate_room_list(rooms, ws=None):
+    # print("validate_room_list")
+    if (
+        not isinstance(rooms, list)
+        or len(rooms) != 4
+        or not all(isinstance(x, int) and x in (0, 1) for x in rooms)
+        or sum(rooms) == 0
+    ):
+        error_message = {
+            "Type": "ERROR_INVALID_ROOM_FORMAT",
+            "message": "Invalid rooms format: {rooms}",
+        }
+        print("Fehlerhafte Raumdaten empfangen:", rooms)
+        if ws:
+            ws.send(json.dumps(error_message))
+            print("Fehlermeldung an Server gesendet: ERROR_INVALID_ROOM_FORMAT")
+        return False
+    return True
+
+
