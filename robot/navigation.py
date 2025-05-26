@@ -1,5 +1,6 @@
+import json
 from time import sleep
-from robot.hardware import ev3_hardware, ColorValues, SpeedConstants, THRESHOLD
+from robot.hardware import ev3_hardware, ColorValues, SpeedConstants, THRESHOLD, wait_for_phone_placed
 
 # Results line following
 TARGET_ROOM_REACHED = "TARGET_ROOM_REACHED"
@@ -25,9 +26,10 @@ def check_and_handle_obstacle(threshold = THRESHOLD):
         print("Hindernis entfernt - Roboter faehrt weiter.")
     return
 
-def follow_line_simple(floor_color=None):
+def follow_line_simple():
     """Einfache Linienverfolgung basierend auf der Bodenfarbe."""
     check_and_handle_obstacle()
+    floor_color = ev3_hardware.sensor_floor.color
 
     if floor_color == ColorValues.BLACK or floor_color == ColorValues.NONE: 
         ev3_hardware.tank_drive.on(left_speed=SpeedConstants.LINE_BLACK_L, right_speed=SpeedConstants.LINE_BLACK_R) 
@@ -39,53 +41,51 @@ def follow_line_simple(floor_color=None):
 
 
 def _get_target_index(rooms):
-    # print("get_target_index")
     for i, val in enumerate(rooms):
         if val == 1:
             return i + 1  # Zimmernummern starten bei 1
     print("Kein Zielraum angegeben  Abbruch.")
     return None
 
-def _navigate_in_target_room(target_index, ws=None):
+#FÜR WAS DIE HIER? --> Wird nirgends aufgerufen
+'''def _navigate_in_target_room(target_index, ws=None):
     global positionRobot
-    print("navigate_in_target_room")
     green_count = 0
 
-    while True:
+    while True: # Outer loop
+        
+        check_and_handle_obstacle()
+
+        follow_line_simple()
+
         result, green_count = follow_line_with_green_count(target_index, green_count)
 
         if result == TARGET_ROOM_REACHED:
-            print("Ziel erreicht - nach links abbiegen und Linie suchen")
+            print("Ziel {target_index} (grüne Platte {green_count}) erreicht. Stoppe und biege links ab.")
+            ev3_hardware.tank_drive.off()
             turn_left_90_degrees()
 
-            # Folge der Linie bis zur blauen Platte im Raum
-            while True:
-                floor_color = ev3_hardware.sensor_floor.color 
-                right_color_id = ev3_hardware.sensor_right.value(0) 
+            print("Nach dem Abbiegen: Suche blaue Platte im Raum {target_index}.")
+            while True: # Inner loop
+                current_right_color_id_inner = ev3_hardware.sensor_right.value(0)
 
-                # print(">>> Nach dem Abbiegen - Bodenfarbe: {}, Rechts erkannt (ID): {}, Distanz: {}".format(floor_color, right_color_id, distance))
+                check_and_handle_obstacle()
 
-                if check_and_handle_obstacle():
-                    sleep(0.1)
-                    continue
+                if current_right_color_id_inner == ColorValues.BLUE:
+                    print("Blaue Platte im Raum erkannt - 180 Grad drehen und auf Handy warten")
+                    ev3_hardware.tank_drive.off()
+                    turn_180_degrees()
+                    
+                    try:
+                        wait_for_phone_placed(ws) 
+                    except NameError:
+                        print("WARNUNG: wait_for_phone_placed Funktion nicht gefunden. Bitte importieren falls notwendig.")
 
-                elif right_color_id == ColorValues.BLUE: 
-                    print(
-                        "Blaue Platte im Raum erkannt - 180 Grad drehen und auf Handy warten"
-                    )
-                    ev3_hardware.tank_drive.off() 
-                    ev3_hardware.tank_drive.on_for_degrees( 
-                        left_speed=-SpeedConstants.TURN, right_speed=SpeedConstants.TURN, degrees=406 
-                    )
-                    ev3_hardware.tank_drive.off() 
-                    wait_for_phone_placed(ws)
                     if ws is not None:
                         message = {"Type": "DRIVE_TO_ROOM_ANSWER", "Answer": "TRUE"}
                         ws.send(json.dumps(message))
                         print("DRIVE_TO_ROOM_ANSWER an Server gesendet.")
 
-                    print("positionRoboter", positionRobot)
-                    print("target_index", target_index)
                     if target_index == 1:
                         positionRobot = POSITION_WAITING
                     elif target_index == 2:
@@ -95,15 +95,20 @@ def _navigate_in_target_room(target_index, ws=None):
                     elif target_index == 4:
                         positionRobot = POSITION_ROOM3
                     else:
-                        print("Unbekannter Zielraum Position nicht gesetzt.")
-
-                    print("Position Roboter gesetzt auf:", positionRobot)
+                        print("Unbekannter Zielraum Index {target_index}. Position nicht gesetzt.")
+                    
+                    print("Position Roboter gesetzt auf: {positionRobot}")
+                    print("Raum {target_index} erfolgreich betreten und finalisiert.")
                     return
-                else:  # Linienverfolgung im Raum
+
+                else:
                     follow_line_simple()
+                
                 sleep(0.1)
 
-def follow_line_with_green_count(target_count, green_seen, floor_color=None):
+        sleep(0.05)'''
+
+def follow_line_with_green_count(target_count, green_seen):
     global last_color_green
     right_color_id = ev3_hardware.sensor_right.value(0) 
 
@@ -132,14 +137,13 @@ def turn_into_room():
 
     # Folge der Linie bis zur blauen Platte im Raum
     while True:
-        floor_color = ev3_hardware.sensor_floor.color
         right_color_id = ev3_hardware.sensor_right.value(0)
 
         if right_color_id == ColorValues.BLUE: 
             turn_180_degrees()
             return
         else:
-            follow_line_simple(floor_color)
+            follow_line_simple()
 
 def turn_180_degrees():
     print(
@@ -166,4 +170,4 @@ def turn_right_90_degrees():
     ev3_hardware.tank_drive.on_for_degrees( 
         left_speed=SpeedConstants.TURN, right_speed=-SpeedConstants.TURN, degrees=203 
     )
-    ev3_hardware.tank_drive.off() 
+    ev3_hardware.tank_drive.off()

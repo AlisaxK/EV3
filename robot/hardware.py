@@ -1,6 +1,8 @@
 from ev3dev2.motor import LargeMotor, OUTPUT_A, OUTPUT_D, MoveTank
 from ev3dev2.sensor.lego import TouchSensor, ColorSensor, InfraredSensor
 from ev3dev2.sensor import Sensor
+import json
+from time import sleep
 
 # Direkter Zugriff auf Konstanten über Klassenname, z.B. ColorValues.BLACK
 # Zugriff auf Hardware-Komponenten über ev3_hardware Instanz, z.B. ev3_hardware.sensor_touch
@@ -46,3 +48,39 @@ class EV3Hardware:
 
 # Globale Instanz der Hardware-Klasse
 ev3_hardware = EV3Hardware()
+
+#
+def wait_for_phone_removed(ws=None, timeout_seconds=5):
+    print("Warte darauf, dass das Handy entfernt wird...")
+    waited = 0
+    while ev3_hardware.sensor_touch.is_pressed:
+        sleep(0.1)
+        waited += 0.1
+
+        if waited >= timeout_seconds:
+            # print("Fehler: Handy wurde nach 5 Sekunden noch nicht entfernt!")
+            if ws is not None:
+                message = {"message": "ERROR_PHONE_NOT_REMOVED"}
+                ws.send(json.dumps(message))
+                print("Fehler-Nachricht an Server gesendet: ERROR_PHONE_NOT_REMOVED")
+            waited = 0
+    print("Handy entfernt. Starte Raumwahl.")
+    sleep(5)
+
+def wait_for_phone_placed(ws=None, timeout_seconds=5):
+    # print("Warte darauf, dass das Handy wieder platziert wird...")
+    waited = 0
+
+    while not ev3_hardware.sensor_touch.is_pressed:
+        sleep(0.1)
+        waited += 0.1
+
+        if waited >= timeout_seconds:
+            print("Fehler: Handy noch nicht erkannt nach 5 Sekunden!")
+            if ws is not None:
+                message = {"message": "ERROR_NO_PHONE_DETECTED"}
+                ws.send(json.dumps(message))
+                print("Fehler-Nachricht an Server gesendet: ERROR_NO_PHONE_DETECTED")
+            waited = 0  # **Reset**:
+    print("Handy erkannt. Roboter faehrt weiter.")
+    sleep(5)
