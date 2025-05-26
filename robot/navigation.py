@@ -47,7 +47,8 @@ def _get_target_index(rooms):
     print("Kein Zielraum angegeben  Abbruch.")
     return None
 
-def _navigate_in_target_room(target_index, ws=None):
+#FÜR WAS DIE HIER? --> Wird nirgends aufgerufen
+'''def _navigate_in_target_room(target_index, ws=None):
     global positionRobot
     green_count = 0
 
@@ -105,7 +106,7 @@ def _navigate_in_target_room(target_index, ws=None):
                 
                 sleep(0.1)
 
-        sleep(0.05)
+        sleep(0.05)'''
 
 def follow_line_with_green_count(target_count, green_seen):
     global last_color_green

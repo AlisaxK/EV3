@@ -15,9 +15,9 @@ from robot.navigation import (
 )
 from robot.hardware import ev3_hardware, ColorValues, wait_for_phone_placed, wait_for_phone_removed
 
+positionRobot = POSITION_START  # Initialize global position
 
 def _handle_target_room_reached(ws, target_index):
-    """Handles the logic when the target room is reached."""
     global positionRobot
     turn_into_room()
     wait_for_phone_placed(ws)
