@@ -1,42 +1,45 @@
-from robot.navigation import *
-from robot.hardware import ev3_hardware, ColorValues
+import json
+from robot.navigation import (
+    follow_line_with_green_count,
+    follow_line_simple,
+    turn_into_room,
+    turn_left_90_degrees,
+    turn_right_90_degrees,
+    turn_180_degrees,
+    TARGET_ROOM_REACHED,
+    POSITION_WAITING,
+    POSITION_ROOM1,
+    POSITION_ROOM2,
+    POSITION_ROOM3,
+    POSITION_START
+)
+from robot.hardware import ev3_hardware, ColorValues, wait_for_phone_placed, wait_for_phone_removed
 
 
-def wait_for_phone_removed(ws=None, timeout_seconds=5):
-    print("Warte darauf, dass das Handy entfernt wird...")
-    waited = 0
-    while ev3_hardware.sensor_touch.is_pressed:
-        sleep(0.1)
-        waited += 0.1
+def _handle_target_room_reached(ws, target_index):
+    """Handles the logic when the target room is reached."""
+    global positionRobot
+    turn_into_room()
+    wait_for_phone_placed(ws)
+    if ws is not None:
+        message = {"Type": "DRIVE_TO_ROOM_ANSWER", "Answer": "TRUE"}
+        ws.send(json.dumps(message))
+        print("DRIVE_TO_ROOM_ANSWER an Server gesendet.")
 
-        if waited >= timeout_seconds:
-            # print("Fehler: Handy wurde nach 5 Sekunden noch nicht entfernt!")
-            if ws is not None:
-                message = {"message": "ERROR_PHONE_NOT_REMOVED"}
-                ws.send(json.dumps(message))
-                print("Fehler-Nachricht an Server gesendet: ERROR_PHONE_NOT_REMOVED")
-            waited = 0
-    print("Handy entfernt. Starte Raumwahl.")
-    sleep(5)
+    print("positionRoboter", positionRobot)
+    print("target_index", target_index)
+    if target_index == 1:
+        positionRobot = POSITION_WAITING
+    elif target_index == 2:
+        positionRobot = POSITION_ROOM1
+    elif target_index == 3:
+        positionRobot = POSITION_ROOM2
+    elif target_index == 4:
+        positionRobot = POSITION_ROOM3
+    else:
+        print("Unbekannter Zielraum Position nicht gesetzt.")
 
-def wait_for_phone_placed(ws=None, timeout_seconds=5):
-    # print("Warte darauf, dass das Handy wieder platziert wird...")
-    waited = 0
-
-    while not ev3_hardware.sensor_touch.is_pressed:
-        sleep(0.1)
-        waited += 0.1
-
-        if waited >= timeout_seconds:
-            print("Fehler: Handy noch nicht erkannt nach 5 Sekunden!")
-            if ws is not None:
-                message = {"message": "ERROR_NO_PHONE_DETECTED"}
-                ws.send(json.dumps(message))
-                print("Fehler-Nachricht an Server gesendet: ERROR_NO_PHONE_DETECTED")
-            waited = 0  # **Reset**:
-    print("Handy erkannt. Roboter faehrt weiter.")
-    sleep(5)
-
+    print("Position Roboter gesetzt auf:", positionRobot)
 
 def driveToRoom(rooms, ws=None):
     global positionRobot
@@ -84,41 +87,19 @@ def driveToRoom(rooms, ws=None):
 
 
     while True:
-        floor_color = ev3_hardware.sensor_floor.color
-        result, green_count = follow_line_with_green_count(target_index, green_count, floor_color)
+        result, green_count = follow_line_with_green_count(target_index, green_count)
 
         if result == TARGET_ROOM_REACHED:
-            turn_into_room()
-            wait_for_phone_placed(ws)
-            if ws is not None:
-                message = {"Type": "DRIVE_TO_ROOM_ANSWER", "Answer": "TRUE"}
-                ws.send(json.dumps(message))
-                print("DRIVE_TO_ROOM_ANSWER an Server gesendet.")
-
-            print("positionRoboter", positionRobot)
-            print("target_index", target_index)
-            if target_index == 1:
-                positionRobot = POSITION_WAITING
-            elif target_index == 2:
-                positionRobot = POSITION_ROOM1
-            elif target_index == 3:
-                positionRobot = POSITION_ROOM2
-            elif target_index == 4:
-                positionRobot = POSITION_ROOM3
-            else:
-                print("Unbekannter Zielraum Position nicht gesetzt.")
-
-            print("Position Roboter gesetzt auf:", positionRobot)
+            _handle_target_room_reached(ws, target_index)
             return
 
         else:  # Linienverfolgung im Raum
-            follow_line_simple(floor_color)
+            follow_line_simple()
 
 def turn_left_to_rooms(target_index, ws=None): 
     print("Verlasse das Wartezimmer und fahre in den gewaehlten Raum:", target_index)
     # PHASE 1: Erste blaue Platte erkennen und links abbiegen
     while True:
-        floor_color = ev3_hardware.sensor_floor.color
         right_color_id = ev3_hardware.sensor_right.value(0)
 
         if right_color_id == ColorValues.BLUE:
@@ -126,7 +107,7 @@ def turn_left_to_rooms(target_index, ws=None):
             return  # Wechsle zu Phase 2
 
         else:  # Linienverfolgung
-            follow_line_simple(floor_color)
+            follow_line_simple()
                     
 
 def driveToBase(ws=None):
@@ -139,7 +120,6 @@ def driveToBase(ws=None):
 
     # PHASE 1: Erste blaue Platte erkennen und rechts abbiegen
     while True:
-        floor_color = ev3_hardware.sensor_floor.color
         right_color_id = ev3_hardware.sensor_right.value(0)
 
 
@@ -148,11 +128,10 @@ def driveToBase(ws=None):
             break  # Wechsle zu Phase 2
 
         else:  # Linienverfolgung
-            follow_line_simple(floor_color)
+            follow_line_simple()
 
     # PHASE 2: Zweite blaue Platte erkennen und 180° drehen
     while True:
-        floor_color = ev3_hardware.sensor_floor.color
         right_color_id = ev3_hardware.sensor_right.value(0)
 
         if right_color_id == ColorValues.BLUE:
@@ -165,7 +144,7 @@ def driveToBase(ws=None):
             return  
 
         else:  # Linienverfolgung
-            follow_line_simple(floor_color)
+            follow_line_simple()
 
     global positionRobot
     positionRobot = POSITION_START
