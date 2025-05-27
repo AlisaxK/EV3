@@ -48,8 +48,14 @@ class TestPickupPatient(unittest.TestCase):
 
         # Sensorwerte simulieren
         mock_sensor_floor.color = 1  # BLACK
-        # mock_sensor_right.value.side_effect = lambda port=0: 3  # BLUE
-        mock_sensor_right.value.side_effect = [ColorValues.BLUE]
+
+        # mock_sensor_right.value.side_effect = ColorValues.BLUE
+        # mock_sensor_right.value.return_value = ColorValues.BLUE
+        mock_sensor_right.value.side_effect = [
+            ColorValues.BLACK,  # zuerst nicht das Ziel
+            ColorValues.GREEN,
+            ColorValues.BLUE,  # am Ende das Ziel
+        ]
         mock_sensor_ir.proximity = 50  # kein Hindernis
 
         with patch("robot.navigation.turn_left_90_degrees"), patch(
@@ -87,8 +93,10 @@ class TestPickupPatient(unittest.TestCase):
 
         # Sensorwerte vorbereiten, damit Schleifenbedingungen erfüllt werden
         mock_sensor_floor.color = 1  # BLACK
-        # mock_sensor_right.value.side_effect = lambda port=0: 3  # BLUE
-        mock_sensor_right.value.side_effect = [ColorValues.BLUE]
+
+        # mock_sensor_right.value.side_effect = ColorValues.BLUE
+        # mock_sensor_right.value.return_value = ColorValues.BLUE
+        mock_sensor_right.value.side_effect = iter([ColorValues.BLUE])
         mock_sensor_ir.proximity = 50  # kein Hindernis
 
         # Simuliere Methoden des Antriebs
