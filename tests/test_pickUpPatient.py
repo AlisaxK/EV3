@@ -1,7 +1,7 @@
-"""
 import unittest
 from unittest.mock import MagicMock, patch
 import sys
+from robot.hardware import ColorValues
 
 mock_sensor = MagicMock()
 mock_motor = MagicMock()
@@ -25,6 +25,7 @@ from robot.task import driveToRoom, pickupPatientFromWaitingRoom, turn_left_to_r
 
 
 class TestPickupPatient(unittest.TestCase):
+    @patch("robot.hardware.wait_for_phone_placed")
     @patch("robot.hardware.wait_for_phone_removed")
     @patch(
         "robot.navigation.follow_line_with_green_count",
@@ -40,13 +41,15 @@ class TestPickupPatient(unittest.TestCase):
         mock_sensor_ir,
         mock_follow_line,
         mock_wait,
+        mock_wait_placed,
     ):
 
         mock_ws = MagicMock()
 
         # Sensorwerte simulieren
         mock_sensor_floor.color = 1  # BLACK
-        mock_sensor_right.value.side_effect = lambda port=0: 3  # BLUE
+        # mock_sensor_right.value.side_effect = lambda port=0: 3  # BLUE
+        mock_sensor_right.value.side_effect = [ColorValues.BLUE]
         mock_sensor_ir.proximity = 50  # kein Hindernis
 
         with patch("robot.navigation.turn_left_90_degrees"), patch(
@@ -84,7 +87,8 @@ class TestPickupPatient(unittest.TestCase):
 
         # Sensorwerte vorbereiten, damit Schleifenbedingungen erfüllt werden
         mock_sensor_floor.color = 1  # BLACK
-        mock_sensor_right.value.side_effect = lambda port=0: 3  # BLUE
+        # mock_sensor_right.value.side_effect = lambda port=0: 3  # BLUE
+        mock_sensor_right.value.side_effect = [ColorValues.BLUE]
         mock_sensor_ir.proximity = 50  # kein Hindernis
 
         # Simuliere Methoden des Antriebs
@@ -104,5 +108,3 @@ class TestPickupPatient(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-"""
