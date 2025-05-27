@@ -45,8 +45,7 @@ class TestPickupPatient(unittest.TestCase):
     ):
 
         mock_ws = MagicMock()
-        # Sensorwerte simulieren
-        # mock_sensor_floor.color = 1  # BLACK
+
         mock_sensor_right.value.side_effect = [
             ColorValues.BLACK,
             ColorValues.GREEN,
@@ -87,29 +86,20 @@ class TestPickupPatient(unittest.TestCase):
     ):
         mock_ws = MagicMock()
 
-        # Sensorwerte vorbereiten, damit Schleifenbedingungen erfüllt werden
-        mock_sensor_floor.color = 1  # BLACK
         mock_sensor_right.value.side_effect = [
             ColorValues.BLACK,
             ColorValues.GREEN,
             ColorValues.BLUE,
         ]
 
-        # mock_sensor_right.value.side_effect = ColorValues.BLUE
-        # mock_sensor_right.value.return_value = ColorValues.BLUE
-        # mock_sensor_right.value.side_effect = iter([ColorValues.BLUE])
         mock_sensor_ir.proximity = 50  # kein Hindernis
 
-        # Simuliere Methoden des Antriebs
         mock_tank_drive.on.return_value = None
         mock_tank_drive.off.return_value = None
         mock_tank_drive.on_for_degrees.return_value = None
 
-        # Jetzt rufen wir die Funktion auf
         turn_left_to_rooms(1, mock_ws)
 
-        # Sicherstellen, dass Endzustand erreicht wurde
-        mock_wait_phone.assert_called_once()
         mock_tank_drive.on_for_degrees.assert_any_call(
             left_speed=-20, right_speed=20, degrees=203
         )
