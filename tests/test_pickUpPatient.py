@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import MagicMock, patch
-import robot_actions as robot
+from robot.task import driveToRoom, pickupPatientFromWaitingRoom, turn_left_to_rooms
 
 
 class TestPickupPatient(unittest.TestCase):
@@ -34,7 +34,7 @@ class TestPickupPatient(unittest.TestCase):
             mock_drive.on.return_value = None
             mock_drive.off.return_value = None
 
-            robot.pickupPatientFromWaitingRoom(mock_ws)
+            pickupPatientFromWaitingRoom(mock_ws)
 
         mock_ws.send.assert_called_with(
             '{"Type": "PICK_PATIENT_ANSWER", "Answer": "TRUE"}'
@@ -71,7 +71,7 @@ class TestPickupPatient(unittest.TestCase):
         mock_tank_drive.on_for_degrees.return_value = None
 
         # Jetzt rufen wir die Funktion auf
-        robot.turn_left_to_rooms(1, mock_ws)
+        turn_left_to_rooms(1, mock_ws)
 
         # Sicherstellen, dass Endzustand erreicht wurde
         mock_wait_phone.assert_called_once()

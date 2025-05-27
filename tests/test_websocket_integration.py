@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock
-from websocket_client import EV3WebSocketClient
-from command_handler import EV3CommandHandler
+from ws_robot.websocket_client import EV3WebSocketClient
+from ws_robot.websocket_handler import EV3CommandHandler
 
 
 class TestWebSocketIntegration(unittest.TestCase):

@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import Mock, patch, call, ANY
-from websocket_client import EV3WebSocketClient
+from ws_robot.websocket_client import EV3WebSocketClient
 import json
 
 
