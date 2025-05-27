@@ -100,7 +100,6 @@ class TestPickupPatient(unittest.TestCase):
 
         turn_left_to_rooms(1, mock_ws)
 
-        # mock_wait_phone.assert_called_once()
         mock_tank_drive.on_for_degrees.assert_any_call(
             left_speed=-20, right_speed=20, degrees=203
         )
