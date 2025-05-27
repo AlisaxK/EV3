@@ -45,16 +45,12 @@ class TestPickupPatient(unittest.TestCase):
     ):
 
         mock_ws = MagicMock()
-
         # Sensorwerte simulieren
-        mock_sensor_floor.color = 1  # BLACK
-
-        # mock_sensor_right.value.side_effect = ColorValues.BLUE
-        # mock_sensor_right.value.return_value = ColorValues.BLUE
+        # mock_sensor_floor.color = 1  # BLACK
         mock_sensor_right.value.side_effect = [
-            ColorValues.BLACK,  # zuerst nicht das Ziel
+            ColorValues.BLACK,
             ColorValues.GREEN,
-            ColorValues.BLUE,  # am Ende das Ziel
+            ColorValues.BLUE,
         ]
         mock_sensor_ir.proximity = 50  # kein Hindernis
 
@@ -71,7 +67,7 @@ class TestPickupPatient(unittest.TestCase):
             '{"Type": "PICK_PATIENT_ANSWER", "Answer": "TRUE"}'
         )
 
-    @patch("robot.hardware.wait_for_phone_placed")
+    @patch("robot.task.wait_for_phone_placed")
     @patch("robot.hardware.ev3_hardware.tank_drive")
     @patch("robot.hardware.ev3_hardware.sensor_ir")
     @patch("robot.hardware.ev3_hardware.sensor_right")
@@ -93,10 +89,15 @@ class TestPickupPatient(unittest.TestCase):
 
         # Sensorwerte vorbereiten, damit Schleifenbedingungen erfüllt werden
         mock_sensor_floor.color = 1  # BLACK
+        mock_sensor_right.value.side_effect = [
+            ColorValues.BLACK,
+            ColorValues.GREEN,
+            ColorValues.BLUE,
+        ]
 
         # mock_sensor_right.value.side_effect = ColorValues.BLUE
         # mock_sensor_right.value.return_value = ColorValues.BLUE
-        mock_sensor_right.value.side_effect = iter([ColorValues.BLUE])
+        # mock_sensor_right.value.side_effect = iter([ColorValues.BLUE])
         mock_sensor_ir.proximity = 50  # kein Hindernis
 
         # Simuliere Methoden des Antriebs

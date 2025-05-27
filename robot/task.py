@@ -48,7 +48,7 @@ def _handle_target_room_reached(ws, target_index):
     print("Position Roboter gesetzt auf:", positionRobot)
 
 
-def driveToRoom(rooms, ws=None):
+def driveToRoom(rooms, ws=None, phone_removed=True):
     global positionRobot
     print("driveToRoom")
     print("positionRobot in driveToRoom", positionRobot)
@@ -69,10 +69,10 @@ def driveToRoom(rooms, ws=None):
             print("Fehlermeldung an Server gesendet: ERROR_INVALID_ROOM_FORMAT")
         return
 
-    if rooms[0] == 1:
-        wait_for_phone_placed(ws)
-    else:
+    if bool(phone_removed):
         wait_for_phone_removed(ws)
+    else:
+        wait_for_phone_placed(ws)
 
     target_index = None
     for i, val in enumerate(rooms):
@@ -164,7 +164,7 @@ def pickupPatientFromWaitingRoom(ws=None):
     print("Hole Patient im Wartezimmer ab")
     global positionRobot
     waitingRoom = [1, 0, 0, 0]
-    driveToRoom(waitingRoom, ws)
+    driveToRoom(waitingRoom, ws, phone_removed=False)
 
     if ws is not None:
         message = {"Type": "PICK_PATIENT_ANSWER", "Answer": "TRUE"}
