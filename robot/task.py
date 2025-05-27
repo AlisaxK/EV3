@@ -11,11 +11,17 @@ from robot.navigation import (
     POSITION_ROOM1,
     POSITION_ROOM2,
     POSITION_ROOM3,
-    POSITION_START
+    POSITION_START,
 )
-from robot.hardware import ev3_hardware, ColorValues, wait_for_phone_placed, wait_for_phone_removed
+from robot.hardware import (
+    ev3_hardware,
+    ColorValues,
+    wait_for_phone_placed,
+    wait_for_phone_removed,
+)
 
 positionRobot = POSITION_START  # Initialize global position
+
 
 def _handle_target_room_reached(ws, target_index):
     global positionRobot
@@ -41,7 +47,8 @@ def _handle_target_room_reached(ws, target_index):
 
     print("Position Roboter gesetzt auf:", positionRobot)
 
-def driveToRoom(rooms, ws=None):
+
+def driveToRoom(rooms, ws=None, phone_removed=True):
     global positionRobot
     print("driveToRoom")
     print("positionRobot in driveToRoom", positionRobot)
@@ -62,10 +69,10 @@ def driveToRoom(rooms, ws=None):
             print("Fehlermeldung an Server gesendet: ERROR_INVALID_ROOM_FORMAT")
         return
 
-    if rooms[0] == 1:
-        wait_for_phone_placed(ws)
-    else:
+    if bool(phone_removed):
         wait_for_phone_removed(ws)
+    else:
+        wait_for_phone_placed(ws)
 
     target_index = None
     for i, val in enumerate(rooms):
@@ -85,7 +92,6 @@ def driveToRoom(rooms, ws=None):
         print("Roboter kommt vom Warteraum und faehrt nach links")
         turn_left_to_rooms(target_index, ws)
 
-
     while True:
         result, green_count = follow_line_with_green_count(target_index, green_count)
 
@@ -96,7 +102,8 @@ def driveToRoom(rooms, ws=None):
         else:  # Linienverfolgung im Raum
             follow_line_simple()
 
-def turn_left_to_rooms(target_index, ws=None): 
+
+def turn_left_to_rooms(target_index, ws=None):
     print("Verlasse das Wartezimmer und fahre in den gewaehlten Raum:", target_index)
     # PHASE 1: Erste blaue Platte erkennen und links abbiegen
     while True:
@@ -108,7 +115,7 @@ def turn_left_to_rooms(target_index, ws=None):
 
         else:  # Linienverfolgung
             follow_line_simple()
-                    
+
 
 def driveToBase(ws=None):
     """
@@ -121,7 +128,6 @@ def driveToBase(ws=None):
     # PHASE 1: Erste blaue Platte erkennen und rechts abbiegen
     while True:
         right_color_id = ev3_hardware.sensor_right.value(0)
-
 
         if right_color_id == ColorValues.BLUE:
             turn_right_90_degrees()
@@ -141,7 +147,7 @@ def driveToBase(ws=None):
                 ws.send(json.dumps(message))
                 print("DRIVE_TO_BASE_ANSWER an Server gesendet.")
 
-            return  
+            return
 
         else:  # Linienverfolgung
             follow_line_simple()
@@ -150,6 +156,7 @@ def driveToBase(ws=None):
     positionRobot = POSITION_START
     print("Position zuruckgesetzt auf: ", positionRobot)
 
+
 def pickupPatientFromWaitingRoom(ws=None):
     # Roboter fährt ins Wartezimmer um Patient abzuholen
     # Prüfen, ob Handy aufliegt, sonst error Code zurückgeben
@@ -157,8 +164,8 @@ def pickupPatientFromWaitingRoom(ws=None):
     print("Hole Patient im Wartezimmer ab")
     global positionRobot
     waitingRoom = [1, 0, 0, 0]
-    driveToRoom(waitingRoom)
-    
+    driveToRoom(waitingRoom, ws, phone_removed=False)
+
     if ws is not None:
         message = {"Type": "PICK_PATIENT_ANSWER", "Answer": "TRUE"}
         ws.send(json.dumps(message))

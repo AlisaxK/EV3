@@ -33,7 +33,7 @@ class EV3CommandHandler:
                         rooms = json.loads(rooms)
                     except json.JSONDecodeError:
                         rooms = []
-                driveToRoom(rooms, self.ws)  # self.ws übergeben
+                driveToRoom(rooms, self.ws, phone_removed=True)  # self.ws übergeben
 
             elif action == DRIVE_TO_BASE:
                 driveToBase(self.ws)
@@ -51,6 +51,7 @@ class EV3CommandHandler:
 
         finally:
             self.busy = False
+
 
 def _validate_room_list(rooms, ws=None):
     # print("validate_room_list")
@@ -70,5 +71,3 @@ def _validate_room_list(rooms, ws=None):
             print("Fehlermeldung an Server gesendet: ERROR_INVALID_ROOM_FORMAT")
         return False
     return True
-
-
