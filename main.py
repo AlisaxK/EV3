@@ -12,14 +12,13 @@ def main(ws):
     # Startpunkt des Programms
     print("Start")
 
-    task.pickupPatientFromWaitingRoom(ws=None)
-    task.driveToRoom([0, 1, 0, 0], ws=None)
-    task.driveToBase()
+    #task.pickupPatientFromWaitingRoom(ws=None)
+    #task.driveToRoom([0, 1, 0, 0], ws=None)
 
 if __name__ == "__main__":
     # Starte WebSocket-Client
     websocket_url = (
-        "ws://192.168.2.170:3001"  # Ersetze <SERVER_IP> mit deiner Server-IP
+        "ws://192.168.19.95:3001"  # Ersetze mit Server-IP
     )
     command_handler = EV3CommandHandler(None)
     ws_client = EV3WebSocketClient(

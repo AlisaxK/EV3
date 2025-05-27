@@ -26,7 +26,6 @@ positionRobot = POSITION_START  # Initialize global position
 def _handle_target_room_reached(ws, target_index):
     global positionRobot
     turn_into_room()
-    wait_for_phone_placed(ws)
     if ws is not None:
         message = {"Type": "DRIVE_TO_ROOM_ANSWER", "Answer": "TRUE"}
         ws.send(json.dumps(message))
@@ -97,10 +96,16 @@ def driveToRoom(rooms, ws=None, phone_removed=True):
 
         if result == TARGET_ROOM_REACHED:
             _handle_target_room_reached(ws, target_index)
-            return
+            break
 
         else:  # Linienverfolgung im Raum
             follow_line_simple()
+    
+    if rooms[0] == 1:
+        return
+    else:
+        driveToBase(ws)
+        return
 
 
 def turn_left_to_rooms(target_index, ws=None):
@@ -124,6 +129,8 @@ def driveToBase(ws=None):
     - Fährt weiter bis zweite blaue Platte → 180° drehen und stoppen
     """
     print("Starte fahrt zur Basis")
+    
+    wait_for_phone_placed(ws)
 
     # PHASE 1: Erste blaue Platte erkennen und rechts abbiegen
     while True:

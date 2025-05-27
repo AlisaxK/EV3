@@ -47,66 +47,6 @@ def _get_target_index(rooms):
     print("Kein Zielraum angegeben  Abbruch.")
     return None
 
-#FÜR WAS DIE HIER? --> Wird nirgends aufgerufen
-'''def _navigate_in_target_room(target_index, ws=None):
-    global positionRobot
-    green_count = 0
-
-    while True: # Outer loop
-        
-        check_and_handle_obstacle()
-
-        follow_line_simple()
-
-        result, green_count = follow_line_with_green_count(target_index, green_count)
-
-        if result == TARGET_ROOM_REACHED:
-            print("Ziel {target_index} (grüne Platte {green_count}) erreicht. Stoppe und biege links ab.")
-            ev3_hardware.tank_drive.off()
-            turn_left_90_degrees()
-
-            print("Nach dem Abbiegen: Suche blaue Platte im Raum {target_index}.")
-            while True: # Inner loop
-                current_right_color_id_inner = ev3_hardware.sensor_right.value(0)
-
-                check_and_handle_obstacle()
-
-                if current_right_color_id_inner == ColorValues.BLUE:
-                    print("Blaue Platte im Raum erkannt - 180 Grad drehen und auf Handy warten")
-                    ev3_hardware.tank_drive.off()
-                    turn_180_degrees()
-                    
-                    try:
-                        wait_for_phone_placed(ws) 
-                    except NameError:
-                        print("WARNUNG: wait_for_phone_placed Funktion nicht gefunden. Bitte importieren falls notwendig.")
-
-                    if ws is not None:
-                        message = {"Type": "DRIVE_TO_ROOM_ANSWER", "Answer": "TRUE"}
-                        ws.send(json.dumps(message))
-                        print("DRIVE_TO_ROOM_ANSWER an Server gesendet.")
-
-                    if target_index == 1:
-                        positionRobot = POSITION_WAITING
-                    elif target_index == 2:
-                        positionRobot = POSITION_ROOM1
-                    elif target_index == 3:
-                        positionRobot = POSITION_ROOM2
-                    elif target_index == 4:
-                        positionRobot = POSITION_ROOM3
-                    else:
-                        print("Unbekannter Zielraum Index {target_index}. Position nicht gesetzt.")
-                    
-                    print("Position Roboter gesetzt auf: {positionRobot}")
-                    print("Raum {target_index} erfolgreich betreten und finalisiert.")
-                    return
-
-                else:
-                    follow_line_simple()
-                
-                sleep(0.1)
-
-        sleep(0.05)'''
 
 def follow_line_with_green_count(target_count, green_seen):
     global last_color_green
