@@ -33,7 +33,7 @@ class TestEV3WebSocketClient(unittest.TestCase):
         mock_print.assert_any_call("WebSocket-Verbindung mit Roboter geschlossen")
         mock_print.assert_any_call("Versuche, die Verbindung wiederherzustellen")
 
-    @patch("websocket_client.Thread")
+    @patch("ws_robot.websocket_client.Thread")
     def test_on_open_starts_thread(self, mock_thread):
         mock_ws = Mock()
         self.client.on_open(mock_ws)
@@ -51,7 +51,7 @@ class TestEV3WebSocketClient(unittest.TestCase):
         self.client.send("test_message")
         mock_print.assert_called_with("WebSocket ist noch nicht verbunden.")
 
-    @patch("websocket_client.Thread")
+    @patch("ws_robot.websocket_client.Thread")
     def test_on_open_delayed_send(self, mock_thread):
         mock_ws = Mock()
 
@@ -67,7 +67,7 @@ class TestEV3WebSocketClient(unittest.TestCase):
 
             self.assertEqual(mock_send.call_args_list[0], call("ro"))
 
-    @patch("websocket_client.Thread")
+    @patch("ws_robot.websocket_client.Thread")
     @patch("builtins.print")
     def test_on_open_delayed_send_exception(self, mock_print, mock_thread):
         mock_ws = Mock()
@@ -86,8 +86,8 @@ class TestEV3WebSocketClient(unittest.TestCase):
         # Überprüfe, ob die Fehlermeldung ausgegeben wurde
         mock_print.assert_any_call("Fehler beim Senden:", ANY)
 
-    @patch("websocket_client.Thread")
-    @patch("websocket_client.WebSocketApp")
+    @patch("ws_robot.websocket_client.Thread")
+    @patch("ws_robot.websocket_client.WebSocketApp")
     def test_start_creates_websocket_and_starts_thread(
         self, mock_websocket_app, mock_thread
     ):
