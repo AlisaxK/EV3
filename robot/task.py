@@ -47,7 +47,7 @@ def _handle_target_room_reached(ws, target_index):
     print("Position Roboter gesetzt auf:", positionRobot)
 
 
-def driveToRoom(rooms, ws=None, phone_removed=True):
+def driveToRoom(rooms, ws=None, phone_removed=True, is_pickup=False):
     global positionRobot
     print("driveToRoom")
     print("positionRobot in driveToRoom", positionRobot)
@@ -67,7 +67,7 @@ def driveToRoom(rooms, ws=None, phone_removed=True):
             ws.send(json.dumps(error_message))
             print("Fehlermeldung an Server gesendet: ERROR_INVALID_ROOM_FORMAT")
         return
-
+        
     if bool(phone_removed):
         wait_for_phone_removed(ws)
     else:
@@ -101,8 +101,10 @@ def driveToRoom(rooms, ws=None, phone_removed=True):
         else:  # Linienverfolgung im Raum
             follow_line_simple()
     
-    if rooms[0] == 1:
+    if is_pickup:
+        wait_for_phone_removed(ws)
         return
+
     else:
         driveToBase(ws)
         return
@@ -171,7 +173,7 @@ def pickupPatientFromWaitingRoom(ws=None):
     print("Hole Patient im Wartezimmer ab")
     global positionRobot
     waitingRoom = [1, 0, 0, 0]
-    driveToRoom(waitingRoom, ws, phone_removed=False)
+    driveToRoom(waitingRoom, ws, phone_removed=False, is_pickup=True)
 
     if ws is not None:
         message = {"Type": "PICK_PATIENT_ANSWER", "Answer": "TRUE"}
