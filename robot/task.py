@@ -147,14 +147,14 @@ def driveToBase(ws=None):
                 ws.send(json.dumps(message))
                 print("DRIVE_TO_BASE_ANSWER an Server gesendet.")
 
+            global positionRobot
+            positionRobot = POSITION_START
+            print("Position zuruckgesetzt auf: ", positionRobot)
+
             return
 
         else:  # Linienverfolgung
             follow_line_simple()
-
-    global positionRobot
-    positionRobot = POSITION_START
-    print("Position zuruckgesetzt auf: ", positionRobot)
 
 
 def pickupPatientFromWaitingRoom(ws=None):
