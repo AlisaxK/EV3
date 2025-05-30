@@ -95,14 +95,17 @@ def driveToRoom(rooms, ws=None, phone_removed=True, is_pickup=False):
         result, green_count = follow_line_with_green_count(target_index, green_count)
 
         if result == TARGET_ROOM_REACHED:
-            _handle_target_room_reached(ws, target_index)
-            break
+            if is_pickup:
+                turn_into_room()
+                break
+            else:
+                _handle_target_room_reached(ws, target_index)
+                break
 
         else:  # Linienverfolgung im Raum
             follow_line_simple()
     
     if is_pickup:
-        wait_for_phone_removed(ws)
         return
 
     else:
@@ -160,6 +163,7 @@ def driveToBase(ws=None):
             positionRobot = POSITION_START
             print("Position zuruckgesetzt auf: ", positionRobot)
 
+            wait_for_phone_removed(ws)
             return
 
         else:  # Linienverfolgung
