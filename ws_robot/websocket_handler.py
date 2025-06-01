@@ -10,7 +10,6 @@ class EV3CommandHandler:
 
     def handle_command(self, command):
         if self.busy:
-            print("Roboter ist beschäftigt. Ignoriere Befehl:", command)
             self.ws.send(
                 json.dumps(
                     {
@@ -33,7 +32,7 @@ class EV3CommandHandler:
                         rooms = json.loads(rooms)
                     except json.JSONDecodeError:
                         rooms = []
-                driveToRoom(rooms, self.ws, phone_removed=True)  # self.ws übergeben
+                driveToRoom(rooms, self.ws, phone_removed=True)
 
             elif action == DRIVE_TO_BASE:
                 driveToBase(self.ws)
@@ -42,11 +41,9 @@ class EV3CommandHandler:
                 pickupPatientFromWaitingRoom(self.ws)
 
             else:
-                print("Unbekannter Befehl:", action)
                 self.ws.send(json.dumps({"Type": "error", "Answer": "unknown_command"}))
 
         except Exception as e:
-            print("Fehler bei Ausführung:", e)
             self.ws.send(json.dumps({"Type": "error", "Answer": str(e)}))
 
         finally:
@@ -54,7 +51,6 @@ class EV3CommandHandler:
 
 
 def _validate_room_list(rooms, ws=None):
-    # print("validate_room_list")
     if (
         not isinstance(rooms, list)
         or len(rooms) != 4
@@ -65,9 +61,7 @@ def _validate_room_list(rooms, ws=None):
             "Type": "ERROR_INVALID_ROOM_FORMAT",
             "message": "Invalid rooms format: {rooms}",
         }
-        print("Fehlerhafte Raumdaten empfangen:", rooms)
         if ws:
             ws.send(json.dumps(error_message))
-            print("Fehlermeldung an Server gesendet: ERROR_INVALID_ROOM_FORMAT")
         return False
     return True

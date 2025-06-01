@@ -11,7 +11,6 @@ class EV3WebSocketClient:
         self.ws = None
 
     def on_message(self, ws, message):
-        print("Server-Nachricht empfangen:", message)
         try:
             command = json.loads(message)
             self.command_callback(command)
@@ -19,30 +18,26 @@ class EV3WebSocketClient:
             print("Nachricht nicht als JSON erkannt:", message)
 
     def on_error(self, ws, error):
-        print("WebSocket-Fehler:", error)
         self.reconnect()
 
     def on_close(self, ws, close_status_code, close_msg):
-        print("WebSocket-Verbindung mit Roboter geschlossen")
         self.reconnect()
 
     def reconnect(self, delay=10):
-        print("Versuche, die Verbindung wiederherzustellen")
         sleep(delay)
         self.start()
 
     def on_open(self, ws):
-        self.ws = ws  # interne Referenz setzen
+        self.ws = ws
 
-        # Übergib die WebSocket-Verbindung an den CommandHandler
         if hasattr(
             self.command_callback, "__self__"
-        ):  # prüfen, ob Methode von einer Instanz kommt
+        ):  
             command_handler_instance = self.command_callback.__self__
             command_handler_instance.ws = ws
 
         def delayed_send():
-            sleep(1)  # Wichtig: 1 Sekunde
+            sleep(1)
             try:
                 ws.send("ro")
             except Exception as e:

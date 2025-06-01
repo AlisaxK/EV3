@@ -21,7 +21,7 @@ from robot.hardware import (
     wait_for_phone_removed,
 )
 
-positionRobot = POSITION_START  # Initialize global position
+positionRobot = POSITION_START
 
 
 def _handle_target_room_reached(ws, target_index):
@@ -30,10 +30,7 @@ def _handle_target_room_reached(ws, target_index):
     if ws is not None:
         message = {"Type": "DRIVE_TO_ROOM_ANSWER", "Answer": "TRUE"}
         ws.send(json.dumps(message))
-        print("DRIVE_TO_ROOM_ANSWER an Server gesendet.")
 
-    print("positionRoboter", positionRobot)
-    print("target_index", target_index)
     if target_index == 1:
         positionRobot = POSITION_WAITING
     elif target_index == 2:
@@ -45,13 +42,9 @@ def _handle_target_room_reached(ws, target_index):
     else:
         print("Unbekannter Zielraum Position nicht gesetzt.")
 
-    print("Position Roboter gesetzt auf:", positionRobot)
-
 
 def driveToRoom(rooms, ws=None, phone_removed=True, is_pickup=False):
     global positionRobot
-    print("driveToRoom")
-    print("positionRobot in driveToRoom", positionRobot)
 
     if (
         not isinstance(rooms, list)
@@ -63,10 +56,8 @@ def driveToRoom(rooms, ws=None, phone_removed=True, is_pickup=False):
             "Type": "ERROR_INVALID_ROOM_FORMAT",
             "message": "Invalid rooms format: {rooms}",
         }
-        print("Fehlerhafte Raumdaten empfangen:", rooms)
         if ws:
             ws.send(json.dumps(error_message))
-            print("Fehlermeldung an Server gesendet: ERROR_INVALID_ROOM_FORMAT")
         return
         
     if bool(phone_removed):
@@ -77,19 +68,16 @@ def driveToRoom(rooms, ws=None, phone_removed=True, is_pickup=False):
     target_index = None
     for i, val in enumerate(rooms):
         if val == 1:
-            target_index = i + 1  # Zimmernummern starten bei 1
+            target_index = i + 1
             break
 
     if target_index is None:
-        print("Kein Zielraum angegeben Abbruch.")
         return
 
     green_count = 0
 
-    print("Ziel: Zimmernummer {} - Roboter soll dort abbiegen.".format(target_index))
     from_waiting_room = positionRobot == POSITION_WAITING
     if from_waiting_room:
-        print("Roboter kommt vom Warteraum und faehrt nach links")
         turn_left_to_rooms(target_index, ws)
         green_count = 1
 
@@ -105,46 +93,36 @@ def driveToRoom(rooms, ws=None, phone_removed=True, is_pickup=False):
                 driveToBase(ws)
                 return
 
-        else:  # Linienverfolgung im Raum
+        else:
             follow_line_simple_to_room()
 
 
 def turn_left_to_rooms(target_index, ws=None):
-    print("Verlasse das Wartezimmer und fahre in den gewaehlten Raum:", target_index)
-    # PHASE 1: Erste blaue Platte erkennen und links abbiegen
     while True:
         right_color_id = ev3_hardware.sensor_right.value(0)
 
         if right_color_id == ColorValues.BLUE:
             turn_left_90_degrees()
-            return  # Wechsle zu Phase 2
+            return
 
-        else:  # Linienverfolgung
+        else:
             follow_line_simple_to_base()
 
 
 def driveToBase(ws=None):
-    """
-    Roboter fährt zur Basis zurück:
-    - Erkennt erste blaue Platte rechts → 90° rechts drehen
-    - Fährt weiter bis zweite blaue Platte → 180° drehen und stoppen
-    """
-    print("Starte fahrt zur Basis")
     
     wait_for_phone_placed(ws)
 
-    # PHASE 1: Erste blaue Platte erkennen und rechts abbiegen
     while True:
         right_color_id = ev3_hardware.sensor_right.value(0)
 
         if right_color_id == ColorValues.BLUE:
             turn_right_90_degrees()
-            break  # Wechsle zu Phase 2
+            break
 
-        else:  # Linienverfolgung
+        else:
             follow_line_simple_to_base()
 
-    # PHASE 2: Zweite blaue Platte erkennen und 180° drehen
     while True:
         right_color_id = ev3_hardware.sensor_right.value(0)
 
@@ -160,14 +138,11 @@ def driveToBase(ws=None):
             print("Position zuruckgesetzt auf: ", positionRobot)
             return
 
-        else:  # Linienverfolgung
+        else:
             follow_line_simple_to_base()
 
 
 def pickupPatientFromWaitingRoom(ws=None):
-    # Roboter fährt ins Wartezimmer um Patient abzuholen
-    # Prüfen, ob Handy aufliegt, sonst error Code zurückgeben
-    # success wenn erfolgreich
     print("Hole Patient im Wartezimmer ab")
     global positionRobot
     waitingRoom = [1, 0, 0, 0]
@@ -176,7 +151,5 @@ def pickupPatientFromWaitingRoom(ws=None):
     if ws is not None:
         message = {"Type": "PICK_PATIENT_ANSWER", "Answer": "TRUE"}
         ws.send(json.dumps(message))
-        print("PICK_PATIENT_ANSWER an Server gesendet.")
 
     positionRobot = POSITION_WAITING
-    print("Position Roboter in pickupPatient gesetzt auf:", positionRobot)
