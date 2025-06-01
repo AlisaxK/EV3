@@ -11,7 +11,7 @@ from ws_robot.websocket_handler import EV3CommandHandler
 def main(ws):
     # Startpunkt des Programms
     print("Start")
-
+    #task.driveToRoom([1, 0, 0, 0])
     #task.pickupPatientFromWaitingRoom(ws=None)
     #task.driveToRoom([0, 1, 0, 0], ws=None)
 
