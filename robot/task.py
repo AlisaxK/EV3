@@ -1,7 +1,8 @@
 import json
 from robot.navigation import (
     follow_line_with_green_count,
-    follow_line_simple,
+    follow_line_simple_to_room,
+    follow_line_simple_to_base,
     turn_into_room,
     turn_left_90_degrees,
     turn_right_90_degrees,
@@ -90,6 +91,7 @@ def driveToRoom(rooms, ws=None, phone_removed=True, is_pickup=False):
     if from_waiting_room:
         print("Roboter kommt vom Warteraum und faehrt nach links")
         turn_left_to_rooms(target_index, ws)
+        green_count = 1
 
     while True:
         result, green_count = follow_line_with_green_count(target_index, green_count)
@@ -97,20 +99,14 @@ def driveToRoom(rooms, ws=None, phone_removed=True, is_pickup=False):
         if result == TARGET_ROOM_REACHED:
             if is_pickup:
                 turn_into_room()
-                break
+                return
             else:
                 _handle_target_room_reached(ws, target_index)
-                break
+                driveToBase(ws)
+                return
 
         else:  # Linienverfolgung im Raum
-            follow_line_simple()
-    
-    if is_pickup:
-        return
-
-    else:
-        driveToBase(ws)
-        return
+            follow_line_simple_to_room()
 
 
 def turn_left_to_rooms(target_index, ws=None):
@@ -124,7 +120,7 @@ def turn_left_to_rooms(target_index, ws=None):
             return  # Wechsle zu Phase 2
 
         else:  # Linienverfolgung
-            follow_line_simple()
+            follow_line_simple_to_base()
 
 
 def driveToBase(ws=None):
@@ -146,7 +142,7 @@ def driveToBase(ws=None):
             break  # Wechsle zu Phase 2
 
         else:  # Linienverfolgung
-            follow_line_simple()
+            follow_line_simple_to_base()
 
     # PHASE 2: Zweite blaue Platte erkennen und 180° drehen
     while True:
@@ -162,12 +158,10 @@ def driveToBase(ws=None):
             global positionRobot
             positionRobot = POSITION_START
             print("Position zuruckgesetzt auf: ", positionRobot)
-
-            wait_for_phone_removed(ws)
             return
 
         else:  # Linienverfolgung
-            follow_line_simple()
+            follow_line_simple_to_base()
 
 
 def pickupPatientFromWaitingRoom(ws=None):

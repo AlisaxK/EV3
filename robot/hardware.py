@@ -20,8 +20,8 @@ class ColorValues:
 # Geschwindigkeitskonstanten
 class SpeedConstants:
     LINE_BLACK_L = 25
-    LINE_BLACK_R = 22
-    LINE_WHITE_L = 22
+    LINE_BLACK_R = 24
+    LINE_WHITE_L = 24
     LINE_WHITE_R = 25
     LINE_OTHER = 20
     TURN = 20
@@ -50,7 +50,7 @@ class EV3Hardware:
 ev3_hardware = EV3Hardware()
 
 #
-def wait_for_phone_removed(ws=None, timeout_seconds=5):
+def wait_for_phone_removed(ws=None, timeout_seconds=10):
     print("Warte darauf, dass das Handy entfernt wird...")
     waited = 0
     while ev3_hardware.sensor_touch.is_pressed:
@@ -58,16 +58,16 @@ def wait_for_phone_removed(ws=None, timeout_seconds=5):
         waited += 0.1
 
         if waited >= timeout_seconds:
-            # print("Fehler: Handy wurde nach 5 Sekunden noch nicht entfernt!")
+            # print("Fehler: Handy wurde nach 10 Sekunden noch nicht entfernt!")
             if ws is not None:
-                message = {"message": "ERROR_PHONE_NOT_REMOVED"}
+                message = {"type": "ERROR_PHONE_NOT_REMOVED"}
                 ws.send(json.dumps(message))
                 print("Fehler-Nachricht an Server gesendet: ERROR_PHONE_NOT_REMOVED")
             waited = 0
     print("Handy entfernt. Starte Raumwahl.")
     sleep(5)
 
-def wait_for_phone_placed(ws=None, timeout_seconds=5):
+def wait_for_phone_placed(ws=None, timeout_seconds=10):
     # print("Warte darauf, dass das Handy wieder platziert wird...")
     waited = 0
 
@@ -78,7 +78,7 @@ def wait_for_phone_placed(ws=None, timeout_seconds=5):
         if waited >= timeout_seconds:
             print("Fehler: Handy noch nicht erkannt nach 5 Sekunden!")
             if ws is not None:
-                message = {"message": "ERROR_NO_PHONE_DETECTED"}
+                message = {"type": "ERROR_NO_PHONE_DETECTED"}
                 ws.send(json.dumps(message))
                 print("Fehler-Nachricht an Server gesendet: ERROR_NO_PHONE_DETECTED")
             waited = 0  # **Reset**:

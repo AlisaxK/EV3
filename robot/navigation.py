@@ -26,8 +26,8 @@ def check_and_handle_obstacle(threshold = THRESHOLD):
         print("Hindernis entfernt - Roboter faehrt weiter.")
     return
 
-def follow_line_simple():
-    """Einfache Linienverfolgung basierend auf der Bodenfarbe."""
+def follow_line_simple_to_room():
+    """Einfache Linienverfolgung basierend auf der Bodenfarbe zum Raum."""
     check_and_handle_obstacle()
     floor_color = ev3_hardware.sensor_floor.color
 
@@ -39,6 +39,19 @@ def follow_line_simple():
         # Bei anderen Farben (z.B. Rand der Linie, oder unerwartete Farbe) geradeaus fahren oder anpassen
         ev3_hardware.tank_drive.on(left_speed=SpeedConstants.LINE_OTHER, right_speed=SpeedConstants.LINE_OTHER) 
 
+def follow_line_simple_to_base():
+    """Einfache Linienverfolgung basierend auf der Bodenfarbe zur Basis."""
+    check_and_handle_obstacle()
+    floor_color = ev3_hardware.sensor_floor.color
+
+    if floor_color == ColorValues.BLACK or floor_color == ColorValues.NONE: 
+        ev3_hardware.tank_drive.on(left_speed=SpeedConstants.LINE_WHITE_L, right_speed=SpeedConstants.LINE_WHITE_R) 
+    elif floor_color == ColorValues.WHITE: 
+        ev3_hardware.tank_drive.on(left_speed=SpeedConstants.LINE_BLACK_L, right_speed=SpeedConstants.LINE_BLACK_R) 
+
+    else:
+        # Bei anderen Farben (z.B. Rand der Linie, oder unerwartete Farbe) geradeaus fahren oder anpassen
+        ev3_hardware.tank_drive.on(left_speed=SpeedConstants.LINE_OTHER, right_speed=SpeedConstants.LINE_OTHER) 
 
 def _get_target_index(rooms):
     for i, val in enumerate(rooms):
@@ -83,7 +96,7 @@ def turn_into_room():
             turn_180_degrees()
             return
         else:
-            follow_line_simple()
+            follow_line_simple_to_room()
 
 def turn_180_degrees():
     print(
