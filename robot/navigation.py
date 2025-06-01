@@ -44,12 +44,6 @@ def follow_line_simple_to_base():
     else:
         ev3_hardware.tank_drive.on(left_speed=SpeedConstants.LINE_OTHER, right_speed=SpeedConstants.LINE_OTHER) 
 
-def _get_target_index(rooms):
-    for i, val in enumerate(rooms):
-        if val == 1:
-            return i + 1
-    return None
-
 
 def follow_line_with_green_count(target_count, green_seen):
     global last_color_green
