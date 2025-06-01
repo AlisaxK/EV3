@@ -48,7 +48,7 @@ def driveToRoom(rooms, ws=None, phone_removed=True, is_pickup=False):
 
     if not _validate_room_list(rooms, ws):
         return
-        
+
     if bool(phone_removed):
         wait_for_phone_removed(ws)
     else:
@@ -78,6 +78,7 @@ def driveToRoom(rooms, ws=None, phone_removed=True, is_pickup=False):
         else:
             follow_line_simple_to_room()
 
+
 def _validate_room_list(rooms, ws=None):
     if (
         not isinstance(rooms, list)
@@ -89,10 +90,12 @@ def _validate_room_list(rooms, ws=None):
             "Type": "ERROR_INVALID_ROOM_FORMAT",
             "message": "Invalid rooms format: {rooms}",
         }
+        print("Invalid rooms format:", rooms)
         if ws:
             ws.send(json.dumps(error_message))
         return False
     return True
+
 
 def turn_left_to_rooms(target_index, ws=None):
     while True:
@@ -107,7 +110,7 @@ def turn_left_to_rooms(target_index, ws=None):
 
 
 def driveToBase(ws=None):
-    
+
     wait_for_phone_placed(ws)
 
     while True:
@@ -150,6 +153,7 @@ def pickupPatientFromWaitingRoom(ws=None):
         ws.send(json.dumps(message))
 
     positionRobot = POSITION_WAITING
+
 
 def _get_target_index(rooms):
     for i, val in enumerate(rooms):
