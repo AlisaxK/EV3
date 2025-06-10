@@ -1,7 +1,6 @@
 import unittest
 from unittest.mock import MagicMock, patch
 import sys
-from robot.hardware import ColorValues
 
 mock_sensor = MagicMock()
 mock_motor = MagicMock()
@@ -22,6 +21,7 @@ sys.modules["ev3dev2.sensor.lego"] = lego_mock
 sys.modules["ev3dev2.sensor"] = sensor_mock
 sys.modules["ev3dev2"] = MagicMock()
 from robot.task import driveToRoom, pickupPatientFromWaitingRoom, turn_left_to_rooms
+from robot.hardware import ColorValues
 
 
 class TestPickupPatient(unittest.TestCase):
