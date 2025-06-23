@@ -51,7 +51,7 @@ class TestPickupPatient(unittest.TestCase):
             ColorValues.GREEN,
             ColorValues.BLUE,
         ]
-        mock_sensor_ir.proximity = 50  # kein Hindernis
+        mock_sensor_ir.proximity = 50
 
         with patch("robot.navigation.turn_left_90_degrees"), patch(
             "robot.hardware.wait_for_phone_placed"
@@ -92,7 +92,7 @@ class TestPickupPatient(unittest.TestCase):
             ColorValues.BLUE,
         ]
 
-        mock_sensor_ir.proximity = 50  # kein Hindernis
+        mock_sensor_ir.proximity = 50
 
         mock_tank_drive.on.return_value = None
         mock_tank_drive.off.return_value = None

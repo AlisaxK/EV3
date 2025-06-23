@@ -10,17 +10,17 @@ class EV3WebSocketClient:
         self.command_callback = command_callback
         self.ws = None
 
-    def on_message(self, ws, message):
+    def on_message(self, message):
         try:
             command = json.loads(message)
             self.command_callback(command)
         except json.JSONDecodeError:
             print("Nachricht nicht als JSON erkannt:", message)
 
-    def on_error(self, ws, error):
+    def on_error(self):
         self.reconnect()
 
-    def on_close(self, ws, close_status_code, close_msg):
+    def on_close(self):
         self.reconnect()
 
     def reconnect(self, delay=10):
@@ -30,9 +30,7 @@ class EV3WebSocketClient:
     def on_open(self, ws):
         self.ws = ws
 
-        if hasattr(
-            self.command_callback, "__self__"
-        ):  
+        if hasattr(self.command_callback, "__self__"):
             command_handler_instance = self.command_callback.__self__
             command_handler_instance.ws = ws
 
