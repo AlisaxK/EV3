@@ -9,9 +9,8 @@ class TestWebSocketIntegration(unittest.TestCase):
         ws_mock = MagicMock()
         handler = EV3CommandHandler(ws=None)
 
-        # Erstelle Client und verwende die Handler-Methode
         client = EV3WebSocketClient("ws://localhost", handler.handle_command)
-        # Simuliere Verbindungsaufbau
+
         client.on_open(ws_mock)
         self.assertIs(handler.ws, ws_mock, "WebSocket wurde nicht korrekt übergeben")
 

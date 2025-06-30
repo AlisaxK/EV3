@@ -56,7 +56,6 @@ class TestEV3WebSocketClient(unittest.TestCase):
         mock_thread.assert_called_once()
         target_function = mock_thread.call_args[1]["target"]
 
-        # Die target-Funktion ist delayed_send(), also manuell ausführen:
         with patch.object(mock_ws, "send") as mock_send:
             target_function()
             self.assertEqual(mock_send.call_count, 1)
@@ -74,12 +73,10 @@ class TestEV3WebSocketClient(unittest.TestCase):
 
         mock_ws.send.side_effect = raise_error
 
-        # Führe delayed_send manuell aus
         self.client.on_open(mock_ws)
         delayed_send_func = mock_thread.call_args[1]["target"]
         delayed_send_func()
 
-        # Überprüfe, ob die Fehlermeldung ausgegeben wurde
         mock_print.assert_any_call("Fehler beim Senden:", ANY)
 
     @patch("ws_robot.websocket_client.Thread")
@@ -92,7 +89,6 @@ class TestEV3WebSocketClient(unittest.TestCase):
 
         self.client.start()
 
-        # Prüfen, dass WebSocketApp korrekt instanziiert wurde
         mock_websocket_app.assert_called_once_with(
             self.client.url,
             on_message=self.client.on_message,
@@ -101,7 +97,6 @@ class TestEV3WebSocketClient(unittest.TestCase):
             on_open=self.client.on_open,
         )
 
-        # Prüfen, dass Thread mit run_forever gestartet wurde
         mock_thread.assert_called_once()
         self.assertEqual(mock_thread.call_args[1]["target"], mock_instance.run_forever)
 
