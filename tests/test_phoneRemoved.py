@@ -2,7 +2,6 @@ import sys
 import unittest
 from unittest.mock import MagicMock, patch
 
-# --- Hardware-Mocking ---
 mock_sensor = MagicMock()
 mock_motor = MagicMock()
 lego_mock = MagicMock()
@@ -23,7 +22,6 @@ class TestWaitForPhoneRemoved(unittest.TestCase):
     def test_waits_until_phone_removed(self, mock_sleep):
         from robot import hardware
 
-        # Sensor ist erst gedrückt, dann nicht mehr
         pressed_states = [True, False]
         def is_pressed_side_effect(_self):
             return pressed_states.pop(0) if pressed_states else False
@@ -39,12 +37,10 @@ class TestWaitForPhoneRemoved(unittest.TestCase):
     def test_sends_error_on_timeout(self, mock_sleep):
         from robot import hardware
 
-        # Sensor bleibt immer gedrückt
         hardware.ev3_hardware.sensor_touch.is_pressed = property(lambda self: True)
 
         mock_ws = MagicMock()
 
-        # Nach 10 sleeps brechen wir die Schleife künstlich ab
         call_count = {"count": 0}
         def sleep_side_effect(_):
             call_count["count"] += 1
@@ -54,10 +50,6 @@ class TestWaitForPhoneRemoved(unittest.TestCase):
 
         with self.assertRaises(Exception):
             hardware.wait_for_phone_removed(mock_ws, timeout_seconds=0.01)
-
-        # Es sollte eine Fehlermeldung gesendet werden (wenn das in deiner Funktion so ist)
-        # Falls die Fehlermeldung erst nach echtem Timeout gesendet wird, kannst du das hier nicht testen,
-        # sondern nur, dass die Schleife "irgendwann" abgebrochen wird.
 
 if __name__ == "__main__":
     unittest.main()

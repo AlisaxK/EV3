@@ -2,7 +2,6 @@ import sys
 import unittest
 from unittest.mock import MagicMock, patch
 
-# --- Hardware-Mocking ---
 mock_sensor = MagicMock()
 mock_motor = MagicMock()
 lego_mock = MagicMock()
@@ -32,7 +31,6 @@ class TestDriveToBase(unittest.TestCase):
     ):
         from robot import task
 
-        # Sensor simuliert zweimal BLUE, damit beide while-Schleifen sofort enden
         task.ev3_hardware.sensor_right.value = MagicMock(side_effect=[task.ColorValues.BLUE, task.ColorValues.BLUE])
 
         mock_ws = MagicMock()
